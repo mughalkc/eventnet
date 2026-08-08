@@ -1,0 +1,21 @@
+.structured-response-container {
+  margin-top: 10px;
+}
+
+.response-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.response-table th,
+.response-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.response-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
