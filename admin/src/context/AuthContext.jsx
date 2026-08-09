@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get('http://${window.location.hostname}:5001/api/auth/me')
+      const response = await axios.get(`https://eventnet-production.up.railway.app/api/auth/me`)
       if (response.data.role === 'admin') {
         setUser(response.data)
       } else {
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://${window.location.hostname}:5001/api/auth/login', {
+      const response = await axios.post(`https://eventnet-production.up.railway.app/api/auth/login`, {
         email,
         password,
         role: 'admin'
