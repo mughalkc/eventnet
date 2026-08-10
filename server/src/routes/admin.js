@@ -390,8 +390,11 @@ router.put('/vendors/:id/status', verifyToken, verifyAdmin, async (req, res) => 
         { status },
         { new: true }
       ).select('-password'),
-      Vendor.findByIdAndUpdate(
-        req.params.id,
+      Vendor.findOneAndUpdate(
+         { $or: [
+    { _id: req.params.id },
+    { contactEmail: (await User.findById(req.params.id).select('email').lean())?.email }
+  ]},
         { status },
         { new: true }
       )
@@ -475,18 +478,18 @@ router.post('/vendors/event-counts', verifyToken, verifyAdmin, async (req, res) 
       }
     ]);
     
-    // Convert to { vendorId: count }
-    const result = {};
-    counts.forEach(c => { 
-      result[c._id.toString()] = c.count; 
-    });
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Event counts fetch error:', error);
-    res.status(500).json({});
-  }
-});
+      // Convert to { vendorId: count }
+      const result = {};
+      counts.forEach(c => { 
+        result[c._id.toString()] = c.count; 
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Event counts fetch error:', error);
+      res.status(500).json({});
+    }
+  });
 
 // Ticket management routes
 router.get('/tickets', verifyToken, verifyAdmin, async (req, res) => {
