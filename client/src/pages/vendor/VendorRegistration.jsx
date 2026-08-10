@@ -101,7 +101,7 @@ const VendorRegistration = () => {
         }
       });
 
-      const response = await fetch('http://${window.location.hostname}:5001/api/vendor/register', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/vendor/register', {
         method: 'POST',
         body: formDataToSend
       });
