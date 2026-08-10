@@ -17,7 +17,7 @@ const Tickets = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://${window.location.hostname}:5001/api/admin/tickets');
+      const response = await axios.get('https://eventnet-production.up.railway.app/api/admin/tickets');
       setTickets(response.data);
       setLoading(false);
     } catch (error) {
@@ -50,7 +50,7 @@ const Tickets = () => {
   const handleDownload = async (ticketId) => {
     try {
       setGenerating(true);
-      const response = await axios.get(`http://${window.location.hostname}:5001/api/admin/tickets/${ticketId}/download`, {
+      const response = await axios.get(`https://eventnet-production.up.railway.app/api/admin/tickets/${ticketId}/download`, {
         responseType: 'blob'
       });
       

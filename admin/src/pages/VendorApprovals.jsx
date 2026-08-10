@@ -3,7 +3,7 @@ import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 
-const API_BASE = 'http://${window.location.hostname}:5001/api/admin/vendors'
+const API_BASE = 'https://eventnet-production.up.railway.app/api/admin/vendors'
 
 const VendorApprovals = () => {
   const [pendingVendors, setPendingVendors] = useState([])

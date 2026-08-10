@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE = 'http://${window.location.hostname}:5001/api/admin/users';
+const API_BASE = 'https://eventnet-production.up.railway.app/api/admin/users';
 
 const Users = () => {
   const { user, loading: authLoading, token } = useAuth();

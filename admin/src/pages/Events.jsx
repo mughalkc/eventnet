@@ -22,7 +22,7 @@ const Events = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('http://${window.location.hostname}:5001/api/admin/events', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/admin/events', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }
@@ -40,7 +40,7 @@ const Events = () => {
 
   const handleDelete = async (eventId) => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/admin/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/admin/events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`

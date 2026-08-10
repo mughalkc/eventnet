@@ -23,7 +23,7 @@ const Vendors = () => {
       setLoading(true);
       
       // Fetch all vendors
-      const response = await fetch('http://${window.location.hostname}:5001/api/admin/vendors', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/admin/vendors', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }
@@ -55,7 +55,7 @@ const Vendors = () => {
 
   const fetchEventCounts = async (vendorIds) => {
     try {
-      const response = await fetch('http://${window.location.hostname}:5001/api/admin/vendors/event-counts', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/admin/vendors/event-counts', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -82,7 +82,7 @@ const Vendors = () => {
 
   const handleStatusUpdate = async (vendor, newStatus) => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/admin/vendors/${vendor._id}/status`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/admin/vendors/${vendor._id}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,

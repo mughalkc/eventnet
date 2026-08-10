@@ -35,7 +35,7 @@ export default function EventDetails() {
 
   const fetchEventDetails = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/admin/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/admin/events/${eventId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
           'Content-Type': 'application/json'
@@ -54,7 +54,7 @@ export default function EventDetails() {
 
   const fetchRegistrations = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/admin/events/${eventId}/registrations`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/admin/events/${eventId}/registrations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
           'Content-Type': 'application/json'
@@ -70,7 +70,7 @@ export default function EventDetails() {
 
   const fetchInsights = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/admin/events/${eventId}/insights`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/admin/events/${eventId}/insights`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
           'Content-Type': 'application/json'
@@ -86,7 +86,7 @@ export default function EventDetails() {
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/admin/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/admin/events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -108,7 +108,7 @@ export default function EventDetails() {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/admin/events/${eventId}/status`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/admin/events/${eventId}/status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,

@@ -31,7 +31,7 @@ const Settings = () => {
       if (user.avatar) {
         setImagePreview(user.avatar.startsWith('http') 
           ? user.avatar 
-          : `http://${window.location.hostname}:5001/${user.avatar}`);
+          : `https://eventnet-production.up.railway.app/${user.avatar}`);
       }
     }
   }, [user]);
@@ -88,14 +88,14 @@ const Settings = () => {
       }
       
       // First, update profile data
-      await axios.put('http://${window.location.hostname}:5001/api/admin/profile', profileData);
+      await axios.put('https://eventnet-production.up.railway.app/api/admin/profile', profileData);
       
       // Then, if there's a new image, upload it
       if (profileImage) {
         const formData = new FormData();
         formData.append('avatar', profileImage);
         
-        await axios.post('http://${window.location.hostname}:5001/api/admin/profile/avatar', formData);
+        await axios.post('https://eventnet-production.up.railway.app/api/admin/profile/avatar', formData);
       }
       
       toast.dismiss(loadingToast);

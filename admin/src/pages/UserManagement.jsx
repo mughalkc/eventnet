@@ -25,7 +25,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://${window.location.hostname}:5001/api/admin/users');
+      const response = await axios.get('https://eventnet-production.up.railway.app/api/admin/users');
       setUsers(response.data);
       setLoading(false);
     } catch (error) {
@@ -83,7 +83,7 @@ const UserManagement = () => {
       // Show loading toast while updating
       const loadingToast = toast.loading('Updating user...');
       
-      const response = await axios.put(`http://${window.location.hostname}:5001/api/admin/users/${currentUser._id}`, {
+      const response = await axios.put(`https://eventnet-production.up.railway.app/api/admin/users/${currentUser._id}`, {
         ...editFormData
       });
       
@@ -120,7 +120,7 @@ const UserManagement = () => {
       // Show loading toast while deleting
       const loadingToast = toast.loading('Deleting user...');
       
-      const response = await axios.delete(`http://${window.location.hostname}:5001/api/admin/users/${currentUser._id}`);
+      const response = await axios.delete(`https://eventnet-production.up.railway.app/api/admin/users/${currentUser._id}`);
       
       // Check if the request was successful
       if (response.status === 200) {
