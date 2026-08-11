@@ -49,7 +49,7 @@ export default function PaymentPage() {
 
   const fetchEventDetails = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}`);
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`);
       const data = await response.json();
       setEvent(data);
       if (data.tickets && data.tickets.length > 0) {
@@ -66,7 +66,7 @@ export default function PaymentPage() {
     setLoadingHistory(true);
     try {
       // Fetch real payment history from the server
-      const response = await fetch('http://${window.location.hostname}:5001/api/payments/history', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/payments/history', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -114,7 +114,7 @@ export default function PaymentPage() {
 
     try {
       // Register user directly for free event
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/register`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ export default function PaymentPage() {
         }
       };
 
-      const response = await fetch('http://${window.location.hostname}:5001/api/payments/process', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/payments/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

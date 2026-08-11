@@ -31,7 +31,7 @@ const getImageUrl = (event) => {
   // Otherwise, prepend the server URL
   // Remove any leading slash if present and normalize backslashes to forward slashes
   const cleanPath = event.image.replace(/^\//, '').replace(/\\/g, '/');
-  return `http://${window.location.hostname}:5001/${cleanPath}`;
+  return `https://eventnet-production.up.railway.app/${cleanPath}`;
 };
 
 export default function EventDetails() {
@@ -93,7 +93,7 @@ export default function EventDetails() {
     try {
       // Add cache-busting query parameter to ensure we get fresh data
       const timestamp = new Date().getTime();
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}?_t=${timestamp}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
           // Removed problematic cache-control headers that were causing CORS issues
@@ -127,7 +127,7 @@ export default function EventDetails() {
 
   const fetchGuests = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/guests`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/guests`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -157,7 +157,7 @@ export default function EventDetails() {
 
   const fetchRegistrations = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/registrations`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/registrations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -178,7 +178,7 @@ export default function EventDetails() {
 
   const fetchInsights = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/insights`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/insights`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -199,7 +199,7 @@ export default function EventDetails() {
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -224,7 +224,7 @@ export default function EventDetails() {
       return;
     }
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/register`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +252,7 @@ export default function EventDetails() {
       return;
     }
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/cancel`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -287,7 +287,7 @@ export default function EventDetails() {
           body.longitude = longitude
         }
 
-        const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/self-checkin`, {
+        const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/self-checkin`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

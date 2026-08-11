@@ -47,8 +47,8 @@ const VendorDashboard = () => {
       };
 
       const [statsRes, eventsRes] = await Promise.all([
-        fetch('http://${window.location.hostname}:5001/api/vendor/stats', { headers }),
-        fetch('http://${window.location.hostname}:5001/api/vendor/events/recent', { headers })
+        fetch('https://eventnet-production.up.railway.app/api/vendor/stats', { headers }),
+        fetch('https://eventnet-production.up.railway.app/api/vendor/events/recent', { headers })
       ]);
 
       if (!statsRes.ok || !eventsRes.ok) {
@@ -82,7 +82,7 @@ const VendorDashboard = () => {
     try {
       console.log('Fetching vendor events...');
       const token = localStorage.getItem('token');
-      const response = await fetch('http://${window.location.hostname}:5001/api/events/vendor', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/events/vendor', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -118,7 +118,7 @@ const VendorDashboard = () => {
     setShowRegistrationsModal(true);
     try {
       console.log(`Fetching guests for event: ${event.name} (${event._id})`);
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${event._id}/guests`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${event._id}/guests`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -157,7 +157,7 @@ const VendorDashboard = () => {
 
   const handleUnregisterUser = async (userId) => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${selectedEvent._id}/cancel`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${selectedEvent._id}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +179,7 @@ const VendorDashboard = () => {
   const handleStatusChange = async (registrationId, newStatus) => {
     try {
       const [eventId, userId] = registrationId.split('-');
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/registrations/${userId}/status`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/registrations/${userId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ const VendorDashboard = () => {
   const handleUnregister = async (registrationId) => {
     try {
       const [eventId, userId] = registrationId.split('-');
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/registrations/${userId}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/registrations/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -248,7 +248,7 @@ const VendorDashboard = () => {
     try {
       console.log('Fetching all registrations...');
       // First, get all events created by this vendor
-      const eventsResponse = await fetch('http://${window.location.hostname}:5001/api/events/vendor', {
+      const eventsResponse = await fetch('https://eventnet-production.up.railway.app/api/events/vendor', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -271,7 +271,7 @@ const VendorDashboard = () => {
       const allRegistrationsPromises = eventsData.map(async (event) => {
         try {
           console.log(`Fetching registrations for event: ${event.name} (${event._id})`);
-          const response = await fetch(`http://${window.location.hostname}:5001/api/events/${event._id}/registrations`, {
+          const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${event._id}/registrations`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }

@@ -17,7 +17,7 @@ router.post('/test', verifyToken, upload.single('image'), (req, res) => {
     res.status(200).json({ 
       message: 'File uploaded successfully',
       filePath,
-      fullUrl: `http://${window.location.hostname}:5001${filePath}`
+      fullUrl: `https://eventnet-production.up.railway.app${filePath}`
     });
   } catch (error) {
     console.error('Upload error:', error);

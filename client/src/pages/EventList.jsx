@@ -41,7 +41,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
         const parts = imageUrl.split(/[\\/]/);  // Split by both forward and backslashes
         const filename = parts[parts.length - 1];
         console.log('Extracted filename from URL:', filename);
-        return `http://${window.location.hostname}:5001/uploads/events/${filename}`;
+        return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
       }
       return imageUrl;
     }
@@ -52,11 +52,11 @@ const EventCard = ({ event, onRegister, onCancel }) => {
       const parts = imageUrl.split(/[\\/]/);  // Split by both forward and backslashes
       const filename = parts[parts.length - 1];
       console.log('Extracted filename from path:', filename);
-      return `http://${window.location.hostname}:5001/uploads/events/${filename}`;
+      return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
     } else {
       // Handle Unix-style paths with forward slashes
       const cleanPath = imageUrl.replace(/^\//, ''); // Remove leading slash if present
-      return `http://${window.location.hostname}:5001/${cleanPath}`;
+      return `https://eventnet-production.up.railway.app/${cleanPath}`;
     }
   };
 
@@ -274,7 +274,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
       try {
         setLoading(true)
         console.log('Fetching events...')
-        const response = await fetch('http://${window.location.hostname}:5001/api/events/public')
+        const response = await fetch('https://eventnet-production.up.railway.app/api/events/public')
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
@@ -311,7 +311,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
 
     const onRegister = async (eventId) => {
       try {
-        const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/register`, {
+        const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -360,7 +360,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
 
     const onCancel = async (eventId) => {
       try {
-        const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/cancel`, {
+        const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
     const handleRegister = async (eventId) => {
       try {
         // First, get the event details to check if it has paid tickets
-        const eventResponse = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}`, {
+        const eventResponse = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json'

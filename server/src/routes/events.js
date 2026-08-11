@@ -165,7 +165,7 @@ router.get('/public', async (req, res) => {
       if (eventObj.image) {
         // Remove any leading slash to avoid double slashes
         const imagePath = eventObj.image.replace(/^\//, '');
-        imageUrl = `http://${window.location.hostname}:5001/uploads/events/${imagePath.replace('uploads/events/', '')}`;
+        imageUrl = `https://eventnet-production.up.railway.app/uploads/events/${imagePath.replace('uploads/events/', '')}`;
       }
       
       return {
@@ -221,7 +221,7 @@ router.get('/user/registered', verifyToken, async (req, res) => {
       const eventObj = event.toObject();
       return {
         ...eventObj,
-        image: eventObj.image ? `http://${window.location.hostname}:5001/${eventObj.image.replace(/^\//, '')}` : 'https://via.placeholder.com/400x200?text=Event+Image'
+        image: eventObj.image ? `https://eventnet-production.up.railway.app/${eventObj.image.replace(/^\//, '')}` : 'https://via.placeholder.com/400x200?text=Event+Image'
       };
     });
     

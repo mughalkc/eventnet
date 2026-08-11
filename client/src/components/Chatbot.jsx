@@ -85,7 +85,7 @@ const Chatbot = ({ onClose }) => {
         content: msg.content
       }));
 
-      const response = await axios.post('http://${window.location.hostname}:5001/api/chatbot', {
+      const response = await axios.post('https://eventnet-production.up.railway.app/api/chatbot', {
         message: currentInput,
         chatHistory: conversationHistory
       });

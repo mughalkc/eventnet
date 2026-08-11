@@ -22,7 +22,7 @@ const VendorRegistrations = () => {
     try {
       console.log('Fetching vendor events...');
       // Get all events created by this vendor
-      const eventsResponse = await fetch('http://${window.location.hostname}:5001/api/events/vendor', {
+      const eventsResponse = await fetch('https://eventnet-production.up.railway.app/api/events/vendor', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -144,7 +144,7 @@ const VendorRegistrations = () => {
       // Since there's no specific endpoint for updating registration status,
       // we'll just show a success message for now
       // In a real implementation, you would create this endpoint on the server
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ const VendorRegistrations = () => {
       const [eventId, userId] = registrationId.split('-');
       
       // Use the existing unregister endpoint
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/register`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

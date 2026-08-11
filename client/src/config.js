@@ -6,8 +6,8 @@
 //   // - On computer (localhost): uses localhost:5001
 //   // - On phone/other device (via IP): uses same IP with port 5001
 //   apiUrl: isLocalNetwork 
-//     ? `http://${window.location.hostname}:5001/api`
-//     : 'http://${window.location.hostname}:5001/api',
+//     ? `https://eventnet-production.up.railway.app/api`
+//     : 'https://eventnet-production.up.railway.app/api',
 //   googleMapsApiKey: '',
 //   maxImageSize: 5 * 1024 * 1024,
 //   defaultMapLocation: {

@@ -27,7 +27,7 @@ const VendorRevenue = () => {
       setLoading(true)
       
       // First fetch revenue data
-      const revenueResponse = await fetch('http://${window.location.hostname}:5001/api/vendor/revenue', {
+      const revenueResponse = await fetch('https://eventnet-production.up.railway.app/api/vendor/revenue', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -42,7 +42,7 @@ const VendorRevenue = () => {
       setRevenue(revenueData.revenue)
       
       // Next fetch all events to count total registrations
-      const eventsResponse = await fetch('http://${window.location.hostname}:5001/api/vendor/events', {
+      const eventsResponse = await fetch('https://eventnet-production.up.railway.app/api/vendor/events', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

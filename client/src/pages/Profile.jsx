@@ -29,7 +29,7 @@ const Profile = () => {
       if (user.photo) {
         // Set the preview URL from the user's photo
         setPreviewUrl(user.photo.startsWith('/uploads') 
-          ? `http://${window.location.hostname}:5001${user.photo}` 
+          ? `https://eventnet-production.up.railway.app${user.photo}` 
           : user.photo);
       }
     }
@@ -84,8 +84,8 @@ const Profile = () => {
       
       // Determine the correct endpoint based on user role
       const endpoint = user.role === 'vendor' 
-        ? 'http://${window.location.hostname}:5001/api/vendor/profile' 
-        : 'http://${window.location.hostname}:5001/api/auth/users/profile';
+        ? 'https://eventnet-production.up.railway.app/api/vendor/profile' 
+        : 'https://eventnet-production.up.railway.app/api/auth/users/profile';
       
       console.log(`Using endpoint for ${user.role} role:`, endpoint);
       
@@ -170,7 +170,7 @@ const Profile = () => {
         
         // Update the preview URL with the new photo path from the server
         if (updatedUserData.photo && updatedUserData.photo.startsWith('/uploads')) {
-          setPreviewUrl(`http://${window.location.hostname}:5001${updatedUserData.photo}`);
+          setPreviewUrl(`https://eventnet-production.up.railway.app${updatedUserData.photo}`);
         }
         
         // Update the global user state

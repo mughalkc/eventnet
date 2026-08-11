@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
-const API_BASE_URL = 'http://${window.location.hostname}:5001/api';
+const API_BASE_URL = 'https://eventnet-production.up.railway.app/api';
 
 const VendorDashboard = () => {
   const { user } = useAuth();

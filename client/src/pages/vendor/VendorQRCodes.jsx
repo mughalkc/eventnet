@@ -20,7 +20,7 @@ const VendorQRCodes = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://${window.location.hostname}:5001/api/vendor/events', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/vendor/events', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

@@ -20,7 +20,7 @@ const EventCard = ({ event }) => {
     }
     
     // Otherwise, prepend the server URL
-    return `http://${window.location.hostname}:5001/${imageUrl.replace(/^\//, '')}`;
+    return `https://eventnet-production.up.railway.app/${imageUrl.replace(/^\//, '')}`;
   };
 
   const handleImageLoad = () => {
@@ -115,7 +115,7 @@ export default function UserEvents() {
 
   const fetchUserEvents = async () => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/user/registered`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/user/registered`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -142,7 +142,7 @@ export default function UserEvents() {
 
   const handleCancelRegistration = async (eventId) => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}/cancel`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

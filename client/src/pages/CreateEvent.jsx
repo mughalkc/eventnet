@@ -168,7 +168,7 @@ export default function CreateEvent() {
     }
     setAiLoading(true)
     try {
-      const response = await fetch('http://${window.location.hostname}:5001/api/vendor/ai/generate-description', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/vendor/ai/generate-description', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +202,7 @@ export default function CreateEvent() {
   const checkConflict = async () => {
     if (!formData.startDate || !formData.startTime) return false
     try {
-      const response = await fetch('http://${window.location.hostname}:5001/api/vendor/events/check-conflict', {
+      const response = await fetch('https://eventnet-production.up.railway.app/api/vendor/events/check-conflict', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -243,7 +243,7 @@ export default function CreateEvent() {
   const fetchEventData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -310,7 +310,7 @@ export default function CreateEvent() {
         // Check if it's a full URL or relative path
         const imageUrl = eventData.image.startsWith('http') 
           ? eventData.image 
-          : `http://${window.location.hostname}:5001/${eventData.image.replace(/^\//, '')}`;
+          : `https://eventnet-production.up.railway.app/${eventData.image.replace(/^\//, '')}`;
           
         setImagePreview(imageUrl);
       }
@@ -530,7 +530,7 @@ export default function CreateEvent() {
             formDataToSend.append('image', image);
             
             // Send update with image
-            response = await fetch(`http://${window.location.hostname}:5001/api/vendor/events/${eventId}`, {
+            response = await fetch(`https://eventnet-production.up.railway.app/api/vendor/events/${eventId}`, {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -540,7 +540,7 @@ export default function CreateEvent() {
           } else {
             // No new image, use JSON approach
             console.log('Updating event with JSON data:', jsonData);
-            response = await fetch(`http://${window.location.hostname}:5001/api/vendor/events/${eventId}`, {
+            response = await fetch(`https://eventnet-production.up.railway.app/api/vendor/events/${eventId}`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
@@ -605,7 +605,7 @@ export default function CreateEvent() {
       }
 
       // For new events, use the standard endpoint
-      const endpoint = 'http://${window.location.hostname}:5001/api/vendor/events';
+      const endpoint = 'https://eventnet-production.up.railway.app/api/vendor/events';
       console.log('Creating new event, sending FormData to:', endpoint);
       
       // Send the create request

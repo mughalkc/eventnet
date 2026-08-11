@@ -27,7 +27,7 @@ export default function RegisterOrganizer() {
 
     setIsLoading(true);
     try {
-      const response = await axios.post('http://${window.location.hostname}:5001/api/auth/register', {
+      const response = await axios.post('https://eventnet-production.up.railway.app/api/auth/register', {
         name: formData.name,
         email: formData.email,
         password: formData.password,
