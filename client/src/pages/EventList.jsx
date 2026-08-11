@@ -207,7 +207,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
     useEffect(() => {
       if (!user) return;
 
-      const socket = new WebSocket(`ws://localhost:5001/ws/events/${user.id}`);
+      const socket = new WebSocket(`wss://eventnet-production.up.railway.app/ws/events/${user.id}`);
 
       socket.onopen = () => {
         console.log('WebSocket connected');
