@@ -82,6 +82,11 @@ return res.status(201).json({
   userId: user._id
 })
 
+} catch (error) {
+    console.error('Registration error:', error)
+    res.status(500).json({ message: 'Server error during registration' })
+  }
+})
 
 // Verify OTP
 router.post('/verify-otp', async (req, res) => {
