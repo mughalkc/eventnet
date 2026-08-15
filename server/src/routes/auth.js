@@ -1,4 +1,5 @@
 const express = require('express')
+const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
@@ -47,14 +48,92 @@ router.post('/register', async (req, res) => {
 
     await user.save()
 
+    // Generate OTP
+const otp = crypto.randomInt(100000, 999999).toString()
+const otpExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+user.otp = otp
+user.otpExpiry = otpExpiry
+user.isVerified = false
+await user.save()
+
+// Send OTP email
+try {
+  await emailService.sendEmail({
+    to: email,
+    subject: 'EventNet - Verify Your Email',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <h2 style="color: #4169E1;">EventNet</h2>
+        <p>Hi <strong>${name}</strong>,</p>
+        <p>Your verification code is:</p>
+        <h1 style="color: #4169E1; letter-spacing: 8px;">${otp}</h1>
+        <p>This code expires in <strong>10 minutes</strong>.</p>
+      </div>
+    `
+  })
+} catch (emailError) {
+  console.error('OTP email error:', emailError)
+}
+
+return res.status(201).json({
+  message: 'OTP sent to your email. Please verify.',
+  requiresVerification: true,
+  userId: user._id
+})
     // Generate JWT token
+//     const token = jwt.sign(
+//       { userId: user._id, role: user.role },
+//       process.env.JWT_SECRET,
+//       { expiresIn: '7d' }
+//     )
+
+//     res.status(201).json({
+//       token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         role: user.role,
+//         status: user.status
+//       }
+//     })
+//   } catch (error) {
+//     console.error('Registration error:', error)
+//     res.status(500).json({ message: 'Server error during registration' })
+//   }
+// })
+
+// Verify OTP
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { userId, otp } = req.body
+
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' })
+    }
+
+    if (new Date() > user.otpExpiry) {
+      return res.status(400).json({ message: 'OTP expired. Please register again.' })
+    }
+
+    user.isVerified = true
+    user.otp = undefined
+    user.otpExpiry = undefined
+    await user.save()
+
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
 
-    res.status(201).json({
+    res.json({
       token,
       user: {
         id: user._id,
@@ -65,8 +144,8 @@ router.post('/register', async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Registration error:', error)
-    res.status(500).json({ message: 'Server error during registration' })
+    console.error('OTP verify error:', error)
+    res.status(500).json({ message: 'Verification failed' })
   }
 })
 
@@ -105,6 +184,11 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ message: 'Vendor account is not approved' })
     }
 
+    // Check if email is verified
+    if (!user.isVerified) {
+      return res.status(403).json({ message: 'Please verify your email first' })
+    }
+    
     // Generate token
     const token = jwt.sign(
       { 

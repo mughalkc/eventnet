@@ -16,36 +16,61 @@ export default function Register() {
     confirmPassword: ''
   });
 
+const [showOTP, setShowOTP] = useState(false)
+const [userId, setUserId] = useState(null)
+const [otp, setOtp] = useState('')
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+  e.preventDefault();
+  if (formData.password !== formData.confirmPassword) {
+    toast.error('Passwords do not match');
+    return;
+  }
 
-    setIsLoading(true);
-    try {
-     const response = await axios.post(`${config.apiUrl}/auth/register`, {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role: role,
-      });
+  setIsLoading(true);
+  try {
+    const response = await axios.post(`${config.apiUrl}/auth/register`, {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: role,
+    });
 
-      if (response.data) {
-        toast.success('Registration successful!');
-        navigate('/login');
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed');
-    } finally {
-      setIsLoading(false);
+    if (response.data.requiresVerification) {
+      setUserId(response.data.userId)
+      setShowOTP(true)
+      toast.success('OTP sent to your email!')
     }
-  };
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Registration failed');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const handleVerifyOTP = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
+  try {
+    const response = await axios.post(`${config.apiUrl}/auth/verify-otp`, {
+      userId,
+      otp
+    });
+
+    if (response.data.token) {
+      toast.success('Email verified! Registration complete.');
+      navigate('/login');
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Invalid OTP');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col items-center justify-center p-4">
@@ -71,6 +96,28 @@ export default function Register() {
         >
           <h2 className="text-2xl font-bold text-white mb-6 text-center">Create your account</h2>
           
+          {showOTP ? (
+  <form onSubmit={handleVerifyOTP} className="space-y-4">
+    <h3 className="text-white text-center text-lg font-semibold">Enter OTP</h3>
+    <p className="text-gray-400 text-center text-sm">Check your email for the 6-digit code</p>
+    <input
+      type="text"
+      maxLength={6}
+      value={otp}
+      onChange={(e) => setOtp(e.target.value)}
+      className="w-full px-4 py-2 bg-white/10 border border-gray-600 rounded-lg text-white text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-500"
+      placeholder="000000"
+    />
+    <button
+      type="submit"
+      disabled={isLoading}
+      className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold"
+    >
+      {isLoading ? 'Verifying...' : 'Verify Email'}
+    </button>
+  </form>
+) : (
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex gap-4 mb-2">
               <label className="text-white flex items-center gap-1">
@@ -169,7 +216,7 @@ export default function Register() {
               {isLoading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
-
+      )}
           <p className="mt-6 text-center text-gray-400">
             Already have an account?{' '}
             <Link to="/login" className="text-purple-400 hover:text-purple-300 font-medium">
