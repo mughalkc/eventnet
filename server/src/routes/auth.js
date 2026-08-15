@@ -81,28 +81,7 @@ return res.status(201).json({
   requiresVerification: true,
   userId: user._id
 })
-    // Generate JWT token
-//     const token = jwt.sign(
-//       { userId: user._id, role: user.role },
-//       process.env.JWT_SECRET,
-//       { expiresIn: '7d' }
-//     )
 
-//     res.status(201).json({
-//       token,
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//         status: user.status
-//       }
-//     })
-//   } catch (error) {
-//     console.error('Registration error:', error)
-//     res.status(500).json({ message: 'Server error during registration' })
-//   }
-// })
 
 // Verify OTP
 router.post('/verify-otp', async (req, res) => {
@@ -188,7 +167,7 @@ router.post('/login', async (req, res) => {
     if (!user.isVerified) {
       return res.status(403).json({ message: 'Please verify your email first' })
     }
-    
+
     // Generate token
     const token = jwt.sign(
       { 
