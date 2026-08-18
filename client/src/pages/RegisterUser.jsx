@@ -14,6 +14,10 @@ export default function RegisterUser() {
     confirmPassword: ''
   });
 
+  const [showOTP, setShowOTP] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [otp, setOtp] = useState('');
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -34,16 +38,49 @@ export default function RegisterUser() {
         role: 'user'
       });
 
-      if (response.data) {
-        toast.success('Registration successful!');
-        navigate('/login');
-      }
+      if (response.data.requiresVerification) {
+          setUserId(response.data.userId);
+          setShowOTP(true);
+          toast.success('OTP sent to your email!');
+        }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleVerifyOTP = async (e) => {
+  e.preventDefault();
+
+  if (!otp || otp.length !== 6) {
+    toast.error('Please enter the 6-digit OTP');
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const response = await axios.post(
+      'https://eventnet-production.up.railway.app/api/auth/verify-otp',
+      {
+        userId,
+        otp
+      }
+    );
+
+    if (response.data.token) {
+      toast.success('Email verified! Registration complete.');
+      navigate('/login');
+    }
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || 'Invalid OTP'
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col items-center justify-center p-4">
@@ -67,8 +104,50 @@ export default function RegisterUser() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="bg-white/10 backdrop-blur-lg rounded-xl p-8 shadow-xl"
         >
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Create your user account</h2>
+          <h2 className="text-2xl font-bold text-white mb-6 text-center">
           
+          {showOTP ? 'Verify your Email' : 'Create Your user account'}
+          </h2>
+          (
+  <form onSubmit={handleVerifyOTP} className="space-y-4">
+    <h3 className="text-white text-center text-lg font-semibold">
+      Enter OTP
+    </h3>
+
+    <p className="text-gray-400 text-center text-sm">
+      Check <span className="font-semibold text-purple-400">{formData.email}</span> for the 6-digit code.
+    </p>
+
+    <input
+      type="text"
+      maxLength={6}
+      value={otp}
+      onChange={(e) =>
+        setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
+      }
+      required
+      className="w-full px-4 py-3 bg-white/10 border border-gray-600 rounded-lg text-white text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-purple-500"
+      placeholder="000000"
+    />
+
+    <button
+      type="submit"
+      disabled={isLoading}
+      className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold"
+    >
+      {isLoading ? 'Verifying...' : 'Verify Email'}
+    </button>
+    <button
+  type="button"
+  onClick={() => setShowOTP(false)}
+  className="w-full text-sm text-gray-400 hover:text-white transition-colors pt-2 mt-2"
+>
+  ← Edit Registration Details
+</button>
+  </form>
+) : (
+
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
@@ -142,7 +221,7 @@ export default function RegisterUser() {
               {isLoading ? 'Creating account...' : 'Create User Account'}
             </button>
           </form>
-
+)}
           <p className="mt-6 text-center text-gray-400">
             Already have an account?{' '}
             <Link to="/login" className="text-purple-400 hover:text-purple-300 font-medium">
