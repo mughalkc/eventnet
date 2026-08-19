@@ -23,7 +23,7 @@ function initializeTransporter() {
     const newTransporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
-      secure: fales,
+      secure: false,
       requireTLS: true,
       auth: {
         user: process.env.EMAIL_USER,
