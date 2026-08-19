@@ -1,3 +1,5 @@
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 const nodemailer = require('nodemailer');
 
 // Shared transporter for the entire application
@@ -128,13 +130,19 @@ function logEmailFallback(mailOptions) {
  */
 async function sendEmail(mailOptions) {
   try {
-    if (!transporter) {
-      throw new Error('Email transporter not initialized');
+    const { data, error } = await resend.emails.send({
+      from: 'EventNet <onboarding@resend.dev>',
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      html: mailOptions.html
+    });
+
+    if (error) {
+      throw new Error(error.message);
     }
-    
-    const info = await transporter.sendMail(mailOptions);
+
     console.log(`Email sent successfully to: ${mailOptions.to}`);
-    return info;
+    return data;
   } catch (error) {
     console.warn(`Failed to send email: ${error.message}`);
     console.log('Using fallback logging method instead');
