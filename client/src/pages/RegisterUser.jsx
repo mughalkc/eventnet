@@ -108,7 +108,7 @@ export default function RegisterUser() {
           
           {showOTP ? 'Verify your Email' : 'Create Your user account'}
           </h2>
-          (
+        {showOTP ?  (
   <form onSubmit={handleVerifyOTP} className="space-y-4">
     <h3 className="text-white text-center text-lg font-semibold">
       Enter OTP
