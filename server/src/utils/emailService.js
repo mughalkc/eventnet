@@ -22,12 +22,14 @@ function initializeTransporter() {
     // Create a transporter with simple auth
     const newTransporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: fales,
+      requireTLS: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
-      }
+      },
+      connectionTimeout: 10000
     });
     
     return newTransporter;
