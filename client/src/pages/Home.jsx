@@ -171,7 +171,7 @@ export default function Home() {
         renderUserContent()
       ) : (
         // Non-logged-in user hero section
-        <div className="container mx-auto px-28">
+        <div className="container mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center justify-between pt-12 lg:pt-20 gap-8">
             {/* Left Content */}
             <div className="w-full lg:w-1/2 text-center lg:text-left">
@@ -218,7 +218,7 @@ export default function Home() {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="space-x-4"
+                className="flex flex-col gap-4 sm:flex-row"
               >
                 <Link
                   to="/register"
