@@ -37,12 +37,12 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center space-x-12">
+    <nav className="bg-white border-b border-gray-200 w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 w-full gap-2 sm:gap-4">
+          <div className="flex items-center gap-4 lg:gap-8 min-w-0">
             {/* Logo */}
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center shrink-0">
               <span className="text-2xl font-bold">
                 <span className="text-[#4169E1]">Event</span>
                 <span className="text-[#FF1493]">Net</span>
@@ -50,7 +50,7 @@ const Navbar = () => {
             </Link>
 
             {/* Navigation Links */}
-            <div className="hidden sm:flex sm:space-x-8">
+            <div className="hidden md:flex items-center gap-4 lg:gap-6">
               <Link
                 to={getEventsLink()}
                 className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
@@ -125,7 +125,7 @@ const Navbar = () => {
           </div>
 
           {/* Right side - Profile/Auth */}
-          <div className="flex items-center">
+          <div className="flex items-center shrink-0">
             {user ? (
               <div className="relative">
                 <button
@@ -185,7 +185,7 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <div className="space-x-4">
+              <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                 <Link
                   to="/login"
                   className="text-gray-500 hover:text-gray-700"
