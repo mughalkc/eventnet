@@ -76,7 +76,7 @@ export default function Home() {
             </div>
 
             {/* Right Content - Animated Phone */}
-            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative">
+            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative overflow-hidden">
               <AnimatedPhone />
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function Home() {
             </div>
 
             {/* Right Content - Animated Phone */}
-            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative">
+            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative overflow-hidden">
               <AnimatedPhone />
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Hero Section */}
       {user ? (
         // Logged-in user content based on role
@@ -236,7 +236,7 @@ export default function Home() {
             </div>
 
             {/* Right Content - Animated Phone */}
-            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative">
+            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative overflow-hidden">
               <AnimatedPhone />
             </div>
           </div>
