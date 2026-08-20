@@ -13,7 +13,7 @@ export default function Home() {
     if (user && user.role === 'vendor') {
       return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between pt-12 lg:pt-20 gap-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between py-6 lg:py-10 gap-6">
             {/* Left Content */}
             <div className="w-full lg:w-1/2 text-center lg:text-left">
               <motion.div
@@ -76,7 +76,7 @@ export default function Home() {
             </div>
 
             {/* Right Content - Animated Phone */}
-            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative overflow-hidden">
+            <div className="w-full lg:w-1/2 h-[320px] sm:h-[380px] lg:h-[420px] relative overflow-hidden">
               <AnimatedPhone />
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function Home() {
     if (user) {
       return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between pt-12 lg:pt-20 gap-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between py-6 lg:py-10 gap-6">
             {/* Left Content */}
             <div className="w-full lg:w-1/2 text-center lg:text-left">
               <motion.div
@@ -151,7 +151,7 @@ export default function Home() {
             </div>
 
             {/* Right Content - Animated Phone */}
-            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative overflow-hidden">
+           <div className="w-full lg:w-1/2 h-[320px] sm:h-[380px] lg:h-[420px] relative overflow-hidden">
               <AnimatedPhone />
             </div>
           </div>
@@ -171,8 +171,8 @@ export default function Home() {
         renderUserContent()
       ) : (
         // Non-logged-in user hero section
-        <div className="container mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between pt-12 lg:pt-20 gap-8">
+        <div className="container mx-auto w-full px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-80px)] flex items-center justify-center">
+           <div className="flex flex-col lg:flex-row items-center justify-between py-4 lg:py-8 gap-6 w-full">
             {/* Left Content */}
             <div className="w-full lg:w-1/2 text-center lg:text-left">
               <motion.div
@@ -186,33 +186,26 @@ export default function Home() {
                 </span>
               </motion.div>
               
-              <motion.h1
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
-              >
-                Delightful
-                <br />
-                events{' '}
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
-                  start
-                </span>
-                {' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
-                  here
-                </span>
-              </motion.h1>
+             <motion.h1
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.5, delay: 0.1 }}
+  className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight"
+>
+  Delightful events <br className="hidden sm:inline" />
+  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+    start here
+  </span>
+</motion.h1>
 
               <motion.p
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-lg sm:text-xl text-gray-300 mb-8 max-w-xl mx-auto lg:mx-0"
-              >
-                Set up an event page, invite friends and <br />sell tickets. Host a memorable event <br /> today
-              </motion.p>
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.5, delay: 0.2 }}
+  className="text-base sm:text-lg text-gray-300 mb-6 max-w-lg mx-auto lg:mx-0"
+>
+  Set up an event page, invite friends and sell tickets. Host a memorable event today.
+</motion.p>
 
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -236,7 +229,7 @@ export default function Home() {
             </div>
 
             {/* Right Content - Animated Phone */}
-            <div className="w-full lg:w-1/2 h-[400px] lg:h-[500px] relative overflow-hidden">
+            <div className="w-full lg:w-1/2 h-[320px] sm:h-[380px] lg:h-[420px] relative overflow-hidden">
               <AnimatedPhone />
             </div>
           </div>
