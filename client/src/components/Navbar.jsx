@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,6 +7,24 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+const dropdownRef = useRef(null);
+
+  // 1. Page change hone par dropdown auto-close hoga
+  useEffect(() => {
+    setIsProfileOpen(false);
+  }, [location.pathname]);
+
+  // 2. Outside screen click par dropdown auto-close hoga
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -37,7 +55,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 w-full overflow-hidden">
+    <nav className="bg-white border-b border-gray-200 w-full relative z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 w-full gap-2 sm:gap-4">
           <div className="flex items-center gap-4 lg:gap-8 min-w-0">
@@ -127,7 +145,7 @@ const Navbar = () => {
           {/* Right side - Profile/Auth */}
           <div className="flex items-center shrink-0">
             {user ? (
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 focus:outline-none"
@@ -164,7 +182,7 @@ const Navbar = () => {
 
                 {/* Profile Dropdown */}
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5">
+                   <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-50">
                     <Link
                       to="/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
