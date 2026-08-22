@@ -7,24 +7,26 @@ const upload = require('../middleware/upload')
 
 const router = express.Router()
 
-// Helper: compute live status from event dates
+// Helper: compute live status from event dates safely
 function getLiveStatus(event) {
-  const now = new Date()
-  const start = new Date(event.startDate)
-  const end = new Date(event.endDate)
+  const now = new Date();
+  const start = new Date(event.startDate);
+  const end = new Date(event.endDate);
+
   if (event.startTime) {
-    const [sh, sm] = event.startTime.split(':')
-    start.setHours(parseInt(sh) || 0, parseInt(sm) || 0, 0, 0)
+    const [sh, sm] = event.startTime.split(':');
+    start.setHours(parseInt(sh) || 0, parseInt(sm) || 0, 0, 0);
   }
   if (event.endTime) {
-    const [eh, em] = event.endTime.split(':')
-    end.setHours(parseInt(eh) || 23, parseInt(em) || 59, 0, 0)
+    const [eh, em] = event.endTime.split(':');
+    end.setHours(parseInt(eh) || 23, parseInt(em) || 59, 0, 0);
   } else {
-    end.setHours(23, 59, 59, 999)
+    end.setHours(23, 59, 59, 999);
   }
-  if (now > end) return 'expired'
-  if (now >= start && now <= end) return 'ongoing'
-  return 'upcoming'
+
+  if (now.getTime() > end.getTime()) return 'expired';
+  if (now.getTime() >= start.getTime() && now.getTime() <= end.getTime()) return 'ongoing';
+  return 'upcoming';
 }
 
 // Create event
@@ -125,7 +127,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-// Get public events - IMPORTANT: This route must be defined BEFORE the /:id route
+
 // One-time fix: make all existing events public — call once from browser
 router.get('/fix-public', async (req, res) => {
   try {
@@ -139,31 +141,29 @@ router.get('/fix-public', async (req, res) => {
   }
 })
 
+//(SHOW EXPIRED TILL NEXT DAY)
+
 router.get('/public', async (req, res) => {
   try {
-    console.log('Fetching public events...')
-    const now = new Date()
+    console.log('Fetching public events...');
 
-    // Fetch events whose endDate is today or future
-    // then filter by liveStatus so time-expired events on today's date are also excluded
+    // Yesterday midnight tak ke events layen (Expired events stay visible until tomorrow)
+    const startOfYesterday = new Date();
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    startOfYesterday.setHours(0, 0, 0, 0);
+
     const events = await Event.find({
-      endDate: { $gte: new Date(now.toDateString()) }
+      isPublic: true,
+      endDate: { $gte: startOfYesterday }
     })
     .populate('createdBy', 'name email businessName')
-    .populate('attendees', 'name email')
+    .populate('attendees', 'name email');
 
-    // Filter out truly expired events (endDate + endTime both passed)
-    const activeEvents = events.filter(e => getLiveStatus(e) !== 'expired')
-
-    console.log(`Found ${activeEvents.length} public events`)
-
-    const transformedEvents = activeEvents.map(event => {
+    const transformedEvents = events.map(event => {
       const eventObj = event.toObject();
       
-      // Format the image URL properly
       let imageUrl = null;
       if (eventObj.image) {
-        // Remove any leading slash to avoid double slashes
         const imagePath = eventObj.image.replace(/^\//, '');
         imageUrl = `https://eventnet-production.up.railway.app/uploads/events/${imagePath.replace('uploads/events/', '')}`;
       }
@@ -193,19 +193,15 @@ router.get('/public', async (req, res) => {
           name: attendee.name || 'Unknown User',
           email: attendee.email || ''
         })) : []
-      }
+      };
     });
 
-    res.json(transformedEvents)
+    res.json(transformedEvents);
   } catch (error) {
-    console.error('Error fetching public events:', error)
-    console.error('Error stack:', error.stack)
-    res.status(500).json({
-      message: 'Failed to fetch events',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-    })
+    console.error('Error fetching public events:', error);
+    res.status(500).json({ message: 'Failed to fetch events' });
   }
-})
+});
 
 // Get user's registered events
 router.get('/user/registered', verifyToken, async (req, res) => {
@@ -214,23 +210,25 @@ router.get('/user/registered', verifyToken, async (req, res) => {
       attendees: req.user.id
     })
     .populate('createdBy', 'name email avatar')
-    .sort({ startDate: 1 })
+    .sort({ startDate: 1 });
     
-    // Transform events to include properly formatted image URLs
     const transformedEvents = events.map(event => {
       const eventObj = event.toObject();
       return {
         ...eventObj,
-        image: eventObj.image ? `https://eventnet-production.up.railway.app/${eventObj.image.replace(/^\//, '')}` : 'https://via.placeholder.com/400x200?text=Event+Image'
+        liveStatus: getLiveStatus(eventObj),
+        image: eventObj.image 
+          ? `https://eventnet-production.up.railway.app/${eventObj.image.replace(/^\//, '')}` 
+          : 'https://via.placeholder.com/400x200?text=Event+Image'
       };
     });
     
-    res.json(transformedEvents)
+    res.json(transformedEvents);
   } catch (error) {
-    console.error('Get user events error:', error)
-    res.status(500).json({ message: 'Error fetching user events' })
+    console.error('Get user events error:', error);
+    res.status(500).json({ message: 'Error fetching user events' });
   }
-})
+});
 
 // Search events
 router.get('/search', async (req, res) => {
@@ -380,6 +378,10 @@ router.post('/:id/register', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'This event is not public' })
     }
 
+    if (getLiveStatus(event) === 'expired') {
+      return res.status(400).json({ message: 'This event has ended and is no longer accepting registrations.' });
+    }
+// BLOCK REGISTRATION IF EXPIRED
     if (event.attendees.some(attendee => attendee._id.toString() === req.user.id)) {
       return res.status(400).json({ message: 'Already registered for this event' })
     }
