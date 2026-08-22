@@ -12,50 +12,85 @@ import {
   XCircleIcon
 } from '@heroicons/react/24/outline'
 
+// Dynamic Status Calculation Helper Function
+
+const getCalculatedStatus = (event) => {
+  if (!event || !event.startDate) return 'upcoming';
+
+  try {
+    const now = new Date();
+
+    const dateObj = new Date(event.startDate);
+    const year = dateObj.getUTCFullYear();
+    const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getUTCDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    const parseTime = (t, defaultVal) => {
+      if (!t) return defaultVal;
+      const match = String(t).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+      if (match) {
+        let h = parseInt(match[1], 10);
+        const m = match[2];
+        const p = match[3];
+        if (p) {
+          if (p.toUpperCase() === 'PM' && h < 12) h += 12;
+          if (p.toUpperCase() === 'AM' && h === 12) h = 0;
+        }
+        return `${String(h).padStart(2, '0')}:${m}`;
+      }
+      return t;
+    };
+
+    const startTime = parseTime(event.startTime, '00:00');
+    const endTime = parseTime(event.endTime, '23:59');
+
+    const start = new Date(`${dateStr}T${startTime}:00`);
+    const end = new Date(`${dateStr}T${endTime}:59`);
+
+    if (now.getTime() > end.getTime()) return 'expired';
+    if (now.getTime() >= start.getTime() && now.getTime() <= end.getTime()) return 'ongoing';
+    return 'upcoming';
+  } catch (err) {
+    return event.liveStatus || 'upcoming';
+  }
+};
+
 const EventCard = ({ event, onRegister, onCancel }) => {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
   const { user } = useAuth()
-  // Properly compare IDs — convert both to string to avoid ObjectId vs string mismatch
+
+  // Calculate live dynamic status on frontend
+  const dynamicStatus = getCalculatedStatus(event);
+
   const isRegistered = user && event.attendees?.some(attendee => {
     const attendeeId = (attendee._id || attendee.id || attendee || '').toString()
     const userId = (user?.id || user?._id || '').toString()
     return attendeeId && userId && attendeeId === userId
   })
+
   const hasPaidTickets = event.tickets && event.tickets.some(ticket => parseFloat(ticket.price) > 0)
   const defaultImage = '/default-event.jpg'
-  const isExpired = event.liveStatus === 'expired'
+  const isExpired = dynamicStatus === 'expired'
   const isFull = event.capacity === 'limited' && (event.attendees?.length || 0) >= event.maxCapacity
 
-  // Ensure image URL is properly formatted
   const getImageUrl = (imageUrl) => {
-    console.log('Original image URL:', imageUrl);
-    
     if (!imageUrl) return defaultImage;
-    
-    // If it's already a full URL (starts with http or https), use it as is
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      // For URLs that contain backslashes (Windows paths in URLs), fix them
       if (imageUrl.includes('\\')) {
-        // Extract just the filename from the path
-        const parts = imageUrl.split(/[\\/]/);  // Split by both forward and backslashes
+        const parts = imageUrl.split(/[\\/]/);
         const filename = parts[parts.length - 1];
-        console.log('Extracted filename from URL:', filename);
         return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
       }
       return imageUrl;
     }
-    
-    // For relative paths
     if (imageUrl.includes('\\')) {
-      // Handle Windows-style paths with backslashes
-      const parts = imageUrl.split(/[\\/]/);  // Split by both forward and backslashes
+      const parts = imageUrl.split(/[\\/]/);
       const filename = parts[parts.length - 1];
-      console.log('Extracted filename from path:', filename);
       return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
     } else {
-      // Handle Unix-style paths with forward slashes
-      const cleanPath = imageUrl.replace(/^\//, ''); // Remove leading slash if present
+      const cleanPath = imageUrl.replace(/^\//, '');
       return `https://eventnet-production.up.railway.app/${cleanPath}`;
     }
   };
@@ -66,7 +101,6 @@ const EventCard = ({ event, onRegister, onCancel }) => {
   }
 
   const handleImageError = () => {
-    console.log('Image failed to load:', event.image);
     setImageError(true);
     setImageLoaded(false);
   }
@@ -90,7 +124,6 @@ const EventCard = ({ event, onRegister, onCancel }) => {
               alt="Default event" 
               className="w-full h-full object-cover"
               onError={(e) => {
-                // If even the default image fails, show a colored background with text
                 e.target.style.display = 'none';
                 e.target.parentNode.innerHTML = '<div class="flex items-center justify-center w-full h-full bg-gray-200"><span class="text-gray-500">Event Image</span></div>';
               }}
@@ -136,13 +169,14 @@ const EventCard = ({ event, onRegister, onCancel }) => {
         </div>
 
         <div className="flex justify-between items-center">
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            event.liveStatus === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-            event.liveStatus === 'ongoing' ? 'bg-green-100 text-green-800' :
+          {/* Real-time Dynamic Status Badge */}
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+            dynamicStatus === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+            dynamicStatus === 'ongoing' ? 'bg-green-100 text-green-800' :
             'bg-gray-200 text-gray-700'
           }`}>
-            {event.liveStatus === 'expired' ? 'Event Ended' :
-             event.liveStatus === 'ongoing' ? 'Ongoing' : 'Upcoming'}
+            {dynamicStatus === 'expired' ? 'Event Ended' :
+             dynamicStatus === 'ongoing' ? 'Ongoing' : 'Upcoming'}
           </span>
           
           {user && (
@@ -195,329 +229,250 @@ const EventCard = ({ event, onRegister, onCancel }) => {
   )
 }
 
-  const EventList = () => {
-    const [events, setEvents] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [searchQuery, setSearchQuery] = useState('')
-    const { user, isAdmin } = useAuth()
-    const navigate = useNavigate()
-    const [ws, setWs] = useState(null)
+const EventList = () => {
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [ws, setWs] = useState(null)
 
-    // Initialize WebSocket connection
-    useEffect(() => {
-      if (!user) return;
+  useEffect(() => {
+    if (!user) return;
+    const socket = new WebSocket(`wss://eventnet-production.up.railway.app/ws/events/${user.id}`);
+    
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'registration_update') {
+        setEvents(prevEvents => 
+          prevEvents.map(evt => 
+            evt._id === data.eventId 
+              ? { ...evt, attendees: data.attendees } 
+              : evt
+          )
+        );
+      }
+    };
 
-      const socket = new WebSocket(`wss://eventnet-production.up.railway.app/ws/events/${user.id}`);
+    setWs(socket);
+    return () => socket.close();
+  }, [user]);
 
-      socket.onopen = () => {
-        console.log('WebSocket connected');
-      };
+  useEffect(() => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    fetchEvents()
+  }, [user]);
 
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'registration_update') {
-          // Update the specific event's registration status
-          setEvents(prevEvents => 
-            prevEvents.map(event => 
-              event._id === data.eventId 
-                ? { ...event, attendees: data.attendees } 
-                : event
-            )
-          );
+  const fetchEvents = async (retryCount = 0) => {
+    try {
+      setLoading(true)
+      const response = await fetch('https://eventnet-production.up.railway.app/api/events/public')
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format: expected an array of events')
+      }
+      
+      setEvents(data)
+    } catch (error) {
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000
+        setTimeout(() => fetchEvents(retryCount + 1), delay)
+        return
+      }
+      toast.error(error.message || 'Failed to fetch events.')
+      setEvents([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onRegister = async (eventId) => {
+    try {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(errData.message || 'Registration failed')
+      }
+
+      toast.success('Successfully registered for the event!')
+      
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'registration_update',
+          eventId: eventId,
+          userId: user.id
+        }))
+      }
+
+      const formattedUser = {
+        _id: user.id || user._id,
+        id: user.id || user._id,
+        name: user.name,
+        email: user.email
       };
+      
+      setEvents(prevEvents => 
+        prevEvents.map(evt => 
+          evt._id === eventId 
+            ? { ...evt, attendees: [...(evt.attendees || []), formattedUser] } 
+            : evt
+        )
+      )
+    } catch (error) {
+      toast.error(error.message || 'Failed to register.')
+    }
+  }
 
-      socket.onclose = () => {
-        console.log('WebSocket disconnected');
-      };
+  const onCancel = async (eventId) => {
+    try {
+      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ userId: user.id })
+      });
 
-      socket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
+      if (!response.ok) throw new Error('Cancellation failed');
 
-      setWs(socket);
+      toast.success('Successfully cancelled registration!')
+      
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'registration_update',
+          eventId: eventId,
+          userId: user.id
+        }))
+      }
 
-      return () => {
-        socket.close();
-      };
-    }, [user]);
+      setEvents(prevEvents => 
+        prevEvents.map(evt => 
+          evt._id === eventId 
+            ? { ...evt, attendees: evt.attendees?.filter(a => (a._id || a.id) !== user.id) || [] } 
+            : evt
+        )
+      )
+    } catch (error) {
+      toast.error('Failed to cancel registration.')
+    }
+  }
 
-    useEffect(() => {
-      if (!user) {
-        navigate('/login')
+  const handleRegister = async (eventId) => {
+    try {
+      const eventResponse = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!eventResponse.ok) throw new Error('Failed to fetch event details')
+
+      const event = await eventResponse.json()
+
+      if (event.tickets && event.tickets.some(t => parseFloat(t.price) > 0)) {
+        navigate(`/events/${eventId}/checkout`)
         return
       }
 
-      fetchEvents()
-    }, [user]);
-
-    // Update events when WebSocket receives a message
-    useEffect(() => {
-      if (ws) {
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.type === 'registration_update') {
-            // Update events list
-            setEvents(prevEvents => 
-              prevEvents.map(event => 
-                event._id === data.eventId 
-                  ? { ...event, attendees: data.attendees } 
-                  : event
-              )
-            );
-          }
-        };
-      }
-    }, [ws]);
-
-    const fetchEvents = async (retryCount = 0) => {
-      try {
-        setLoading(true)
-        console.log('Fetching events...')
-        const response = await fetch('https://eventnet-production.up.railway.app/api/events/public')
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          console.error('Server error response:', errorData)
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        console.log('Received events data:', data)
-        
-        if (!Array.isArray(data)) {
-          console.error('Invalid response format:', data)
-          throw new Error('Invalid response format: expected an array of events')
-        }
-        
-        setEvents(data)
-      } catch (error) {
-        console.error('Failed to fetch events:', error)
-        
-        // Retry up to 3 times with exponential backoff
-        if (retryCount < 3) {
-          const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
-          console.log(`Retrying in ${delay}ms... (attempt ${retryCount + 1})`)
-          setTimeout(() => fetchEvents(retryCount + 1), delay)
-          return
-        }
-        
-        toast.error(error.message || 'Failed to fetch events. Please try again later.')
-        setEvents([])
-      } finally {
-        setLoading(false)
-      }
+      await onRegister(eventId)
+    } catch (error) {
+      toast.error(error.message || 'Failed to register')
     }
-
-    const onRegister = async (eventId) => {
-      try {
-        const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}))
-          throw new Error(errData.message || 'Registration failed')
-        }
-
-        const data = await response.json()
-        toast.success('Successfully registered for the event!')
-        
-        // Send registration update to WebSocket
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'registration_update',
-            eventId: eventId,
-            userId: user.id
-          }))
-        }
-
-        // Format user object to match the expected structure
-        const formattedUser = {
-          _id: user.id || user._id,
-          id: user.id || user._id,
-          name: user.name,
-          email: user.email
-        };
-        
-        // Update events state immediately
-        setEvents(prevEvents => 
-          prevEvents.map(event => 
-            event._id === eventId 
-              ? { ...event, attendees: [...(event.attendees || []), formattedUser] } 
-              : event
-          )
-        )
-      } catch (error) {
-        console.error('Error registering for event:', error)
-        toast.error(error.message || 'Failed to register for the event. Please try again.')
-      }
-    }
-
-    const onCancel = async (eventId) => {
-      try {
-        const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ userId: user.id })
-        });
-
-        if (!response.ok) {
-          throw new Error('Cancellation failed')
-        }
-
-        const data = await response.json()
-        toast.success('Successfully cancelled registration!')
-        
-        // Send cancellation update to WebSocket
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'registration_update',
-            eventId: eventId,
-            userId: user.id
-          }))
-        }
-
-        // Update events list immediately
-        setEvents(prevEvents => 
-          prevEvents.map(event => 
-            event._id === eventId 
-              ? { ...event, attendees: event.attendees?.filter(attendee => attendee._id !== user.id) || [] } 
-              : event
-          )
-        )
-      } catch (error) {
-        console.error('Error cancelling registration:', error)
-        toast.error('Failed to cancel registration. Please try again.')
-      }
-    }
-
-    const handleRegister = async (eventId) => {
-      try {
-        // First, get the event details to check if it has paid tickets
-        const eventResponse = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
-        if (!eventResponse.ok) {
-          throw new Error('Failed to fetch event details')
-        }
-
-        const event = await eventResponse.json()
-
-        if (event.tickets && event.tickets.some(ticket => parseFloat(ticket.price) > 0)) {
-          // For paid events, navigate to checkout
-          navigate(`/events/${eventId}/checkout`)
-          return
-        }
-
-        // For free events, proceed with registration
-        await onRegister(eventId)
-      } catch (error) {
-        console.error('Registration error:', error)
-        toast.error(error.message || 'Failed to register for event')
-      }
-    }
-
-    const handleCancel = async (eventId) => {
-      try {
-        await onCancel(eventId)
-      } catch (error) {
-        console.error('Cancellation error:', error)
-        toast.error(error.message || 'Failed to cancel registration')
-      }
-    }
-
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">Explore Events</h1>
-            <p className="text-gray-600 mt-2">Discover amazing events happening around you</p>
-          </div>
-          
-          {/* Search bar */}
-          <div className="relative max-w-md mx-auto md:mx-0">
-            <input
-              type="text"
-              placeholder="Search events..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center items-center min-h-[300px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : events.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">No events found.</p>
-          </div>
-        ) : (
-          // Filter events based on search query
-          events.filter(event => {
-            if (!searchQuery) return true;
-            const query = searchQuery.toLowerCase();
-            return (
-              event.name?.toLowerCase().includes(query) ||
-              event.description?.toLowerCase().includes(query) ||
-              (typeof event.location === 'string' && event.location.toLowerCase().includes(query)) ||
-              (typeof event.location === 'object' && event.location.address?.toLowerCase().includes(query))
-            );
-          }).length === 0 ? (
-          // No search results
-          <div className="text-center py-8">
-            <p className="text-gray-600">No events found matching "{searchQuery}"</p>
-            <button 
-              onClick={() => setSearchQuery('')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Clear Search
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events
-              .filter(event => {
-                if (!searchQuery) return true;
-                const query = searchQuery.toLowerCase();
-                return (
-                  event.name?.toLowerCase().includes(query) ||
-                  event.description?.toLowerCase().includes(query) ||
-                  (typeof event.location === 'string' && event.location.toLowerCase().includes(query)) ||
-                  (typeof event.location === 'object' && event.location.address?.toLowerCase().includes(query))
-                );
-              })
-              .map(event => (
-                <EventCard
-                  key={event._id}
-                  event={event}
-                  onRegister={handleRegister}
-                  onCancel={handleCancel}
-                />
-              ))}
-          </div>
-        ))}
-      </div>
-    )
   }
 
-  export default EventList 
+  const handleCancel = async (eventId) => {
+    try {
+      await onCancel(eventId)
+    } catch (error) {
+      toast.error(error.message || 'Failed to cancel')
+    }
+  }
+
+  const filteredEvents = events.filter(evt => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      evt.name?.toLowerCase().includes(q) ||
+      evt.description?.toLowerCase().includes(q) ||
+      (typeof evt.location === 'string' && evt.location.toLowerCase().includes(q)) ||
+      (typeof evt.location === 'object' && evt.location.address?.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">Explore Events</h1>
+          <p className="text-gray-600 mt-2">Discover amazing events happening around you</p>
+        </div>
+        
+        <div className="relative max-w-md mx-auto md:mx-0">
+          <input
+            type="text"
+            placeholder="Search events..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center min-h-[300px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : events.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-600">No events found.</p>
+        </div>
+      ) : filteredEvents.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-600">No events found matching "{searchQuery}"</p>
+          <button 
+            onClick={() => setSearchQuery('')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Clear Search
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEvents.map(event => (
+            <EventCard
+              key={event._id}
+              event={event}
+              onRegister={handleRegister}
+              onCancel={handleCancel}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default EventList;
