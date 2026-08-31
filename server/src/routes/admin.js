@@ -38,44 +38,45 @@ router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
             return false;
           }
 
-          const start = new Date(event.startDate);
-          const [startHours, startMinutes] = event.startTime.split(':').map(Number);
-          start.setHours(startHours, startMinutes, 0, 0);
+          const parseTime = (timeStr, defaultH, defaultM) => {
+          if (!timeStr) return [defaultH, defaultM];
+          const match = String(timeStr).match(/(\d+):(\d+)\s*(AM|PM)?/i);
+          if (!match) return [defaultH, defaultM];
+          let h = parseInt(match[1], 10);
+          let m = parseInt(match[2], 10);
+          const period = match[3];
+          if (period) {
+            if (period.toUpperCase() === 'PM' && h < 12) h += 12;
+            if (period.toUpperCase() === 'AM' && h === 12) h = 0;
+          }
+          return [h, m];
+        };
 
-          const end = new Date(event.endDate);
-          const [endHours, endMinutes] = event.endTime.split(':').map(Number);
-          end.setHours(endHours, endMinutes, 0, 0);
+        const start = new Date(event.startDate);
+        const [startH, startM] = parseTime(event.startTime, 0, 0);
+        start.setHours(startH, startM, 0, 0);
+
+        const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+        const [endH, endM] = parseTime(event.endTime, 23, 59);
+        end.setHours(endH, endM, 59, 999);
 
           return now >= start && now <= end;
         }).length;
 
     console.log(`Active events: ${activeEvents}`);
     
-    // Get total revenue from tickets
+// Get total revenue from tickets (Only actual paid/completed tickets)
     let totalRevenue = 0;
     
-    // Try to get revenue from the Ticket model
     const ticketRevenue = await Ticket.aggregate([
+      { $match: { paymentStatus: { $in: ['completed', 'paid'] } } },
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]);
     
     if (ticketRevenue.length > 0 && ticketRevenue[0].total) {
-      totalRevenue += ticketRevenue[0].total;
+      totalRevenue = ticketRevenue[0].total;
       console.log(`Revenue from tickets: ${ticketRevenue[0].total}`);
     }
-    
-    // Also check completed events revenue
-    const eventRevenue = await Event.aggregate([
-      { $match: { status: 'completed' } },
-      { $group: { _id: null, total: { $sum: '$price' } } }
-    ]);
-    
-    if (eventRevenue.length > 0 && eventRevenue[0].total) {
-      totalRevenue += eventRevenue[0].total;
-      console.log(`Revenue from completed events: ${eventRevenue[0].total}`);
-    }
-    
-   
     
     console.log(`Total revenue: ${totalRevenue}`);
     
@@ -141,34 +142,35 @@ router.get('/events', verifyToken, verifyAdmin, async (req, res) => {
       .sort('-createdAt')
       .lean();
     
-    const now = new Date();
+const now = new Date();
 
-const eventsWithLiveStatus = events.map(event => {
-  let liveStatus = 'upcoming';
+    const eventsWithLiveStatus = events.map(event => {
+      let liveStatus = 'upcoming';
 
-  if (event.startDate && event.endDate && event.startTime && event.endTime) {
-    const start = new Date(event.startDate);
-    const [startHours, startMinutes] = event.startTime.split(':').map(Number);
-    start.setHours(startHours, startMinutes, 0, 0);
+      if (event.startDate) {
+        const start = new Date(event.startDate);
+        const [startHours, startMinutes] = (event.startTime || '00:00').split(':').map(Number);
+        start.setHours(startHours || 0, startMinutes || 0, 0, 0);
 
-    const end = new Date(event.endDate);
-    const [endHours, endMinutes] = event.endTime.split(':').map(Number);
-    end.setHours(endHours, endMinutes, 0, 0);
+        // Agar endDate na ho toh startDate ko hi end limit set karein
+        const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+        const [endHours, endMinutes] = (event.endTime || '23:59').split(':').map(Number);
+        end.setHours(endHours || 23, endMinutes || 59, 59, 999);
 
-    if (now < start) {
-      liveStatus = 'upcoming';
-    } else if (now >= start && now <= end) {
-      liveStatus = 'ongoing';
-    } else {
-      liveStatus = 'expired';
-    }
-  }
+        if (now > end) {
+          liveStatus = 'expired';
+        } else if (now >= start && now <= end) {
+          liveStatus = 'ongoing';
+        } else {
+          liveStatus = 'upcoming';
+        }
+      }
 
-  return {
-    ...event,
-    liveStatus
-  };
-});
+      return {
+        ...event,
+        liveStatus
+      };
+    });
 
 res.json(eventsWithLiveStatus);
 
