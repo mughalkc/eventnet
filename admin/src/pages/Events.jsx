@@ -187,14 +187,14 @@ const Events = () => {
                       <div className="text-sm text-gray-600">{event.category}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                        ${(event.liveStatus || event.status) === 'ongoing' || (event.liveStatus || event.status) === 'published' ? 'bg-green-100 text-green-800' : 
-                          (event.liveStatus || event.status) === 'expired' ? 'bg-red-100 text-red-800' : 
-                          (event.liveStatus || event.status) === 'draft' ? 'bg-gray-100 text-gray-800' : 
-                          'bg-yellow-100 text-yellow-800'}`}>
-                        {event.liveStatus || event.status}
-                      </span>
-                    </td>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                          ${(event.liveStatus || event.status) === 'ongoing' || (event.liveStatus || event.status) === 'published' ? 'bg-green-100 text-green-800' : 
+                            (event.liveStatus || event.status) === 'expired' ? 'bg-red-100 text-red-800' : 
+                            (event.liveStatus || event.status) === 'draft' ? 'bg-gray-100 text-gray-800' : 
+                            'bg-yellow-100 text-yellow-800'}`}>
+                          {event.liveStatus || event.status}
+                        </span>
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                       <div className="text-sm text-gray-600">
                         

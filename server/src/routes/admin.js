@@ -56,8 +56,15 @@ router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
         const [startH, startM] = parseTime(event.startTime, 0, 0);
         start.setHours(startH, startM, 0, 0);
 
-        const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
-        const [endH, endM] = parseTime(event.endTime, 23, 59);
+       const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+        
+        // Agar endTime missing ho toh default 23:59 ke bajaye start time ke baad expire karein
+        let [endH, endM] = parseTime(event.endTime, -1, -1);
+        if (endH === -1) {
+          const [startH, startM] = parseTime(event.startTime, 0, 0);
+          endH = startH + 2; // Event duration 2 hours set ho jayegi
+          endM = startM;
+        }
         end.setHours(endH, endM, 59, 999);
 
           return now >= start && now <= end;
@@ -135,27 +142,48 @@ router.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 // Event management routes
+// Event management routes
 router.get('/events', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const events = await Event.find()
       .populate('createdBy', 'name email')
       .sort('-createdAt')
       .lean();
-    
-const now = new Date();
+
+    const now = new Date();
+
+    // Time parse karne ka robust helper function
+    const parseTime = (timeStr, defaultH, defaultM) => {
+      if (!timeStr) return [defaultH, defaultM];
+      const match = String(timeStr).match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!match) return [defaultH, defaultM];
+      let h = parseInt(match[1], 10);
+      let m = parseInt(match[2], 10);
+      const period = match[3];
+      if (period) {
+        if (period.toUpperCase() === 'PM' && h < 12) h += 12;
+        if (period.toUpperCase() === 'AM' && h === 12) h = 0;
+      }
+      return [h, m];
+    };
 
     const eventsWithLiveStatus = events.map(event => {
       let liveStatus = 'upcoming';
 
       if (event.startDate) {
         const start = new Date(event.startDate);
-        const [startHours, startMinutes] = (event.startTime || '00:00').split(':').map(Number);
-        start.setHours(startHours || 0, startMinutes || 0, 0, 0);
+        const [startH, startM] = parseTime(event.startTime, 0, 0);
+        start.setHours(startH, startM, 0, 0);
 
-        // Agar endDate na ho toh startDate ko hi end limit set karein
         const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
-        const [endHours, endMinutes] = (event.endTime || '23:59').split(':').map(Number);
-        end.setHours(endHours || 23, endMinutes || 59, 59, 999);
+        let [endH, endM] = parseTime(event.endTime, -1, -1);
+        
+        // Agar endTime na di ho toh start time se 2 ghante baad auto-expire karein
+        if (endH === -1) {
+          endH = startH + 2;
+          endM = startM;
+        }
+        end.setHours(endH, endM, 59, 999);
 
         if (now > end) {
           liveStatus = 'expired';
@@ -172,9 +200,7 @@ const now = new Date();
       };
     });
 
-res.json(eventsWithLiveStatus);
-
-
+    res.json(eventsWithLiveStatus);
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ message: 'Error fetching events' });
