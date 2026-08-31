@@ -270,6 +270,33 @@ export default function EventDetails() {
     }
   };
 
+// Contact Vendor
+const handleContactVendor = () => {
+  // User login nahi hai to login page par bhejo
+  if (!user) {
+    toast.error('Please sign in to contact the vendor')
+    navigate('/login')
+    return
+  }
+
+  if (user.role !== 'user') {
+    toast.error('Only users can contact the vendor')
+    return
+  }
+
+  const vendorId =
+    event.createdBy?._id ||
+    event.createdBy?.id ||
+    event.createdBy
+
+  if (!vendorId) {
+    toast.error('Vendor information is not available')
+    return
+  }
+
+  navigate(`/contact?vendorId=${vendorId}&eventId=${eventId}`)
+}
+
   // Feature: Self attendance with optional GPS verification
   const handleSelfCheckin = async () => {
     if (!user) {
@@ -667,6 +694,18 @@ export default function EventDetails() {
             <ShareIcon className="h-5 w-5 mr-2 text-gray-500" />
             Share Event
           </button>
+
+          {/* Contact Vendor button */}
+            {user?.role === 'user' && (
+            <button
+            onClick={handleContactVendor}
+            className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-white hover:bg-blue-50"
+            >
+           <ChatBubbleLeftIcon className="h-5 w-5 mr-2" />
+           Contact Vendor
+            </button>
+            )}
+
           {!isCreator && (
             isRegistered ? (
               <div className="flex flex-col gap-2">
@@ -740,7 +779,7 @@ export default function EventDetails() {
               {/* QR Code */}
               <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg">
                 <QRCodeSVG
-                  value={`${window.location.origin}/events/${eventId}`}
+                  value={`${window.location.origin}/checkin/${eventId}`}
                   size={200}
                   level="H"
                   includeMargin={true}

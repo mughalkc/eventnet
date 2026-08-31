@@ -326,26 +326,38 @@ router.get('/events', verifyToken, verifyVendor, async (req, res) => {
   }
 });
 
-// Get dashboard stats for a vendor
+// Get dashboard stats for a vendor (SINGLE SOURCE OF TRUTH)
 router.get('/stats', verifyToken, verifyVendor, async (req, res) => {
   try {
     const vendorId = req.user.id;
-    
-    // Get all events for this vendor
-    const events = await Event.find({ createdBy: vendorId });
-    
-    // Get active events (events that haven't ended yet)
-    const now = new Date();
-    const activeEvents = events.filter(event => new Date(event.endDate) >= now).length;
-    
-    // Get total registrations across all events
-    const totalRegistrations = events.reduce((sum, event) => sum + (event.attendees ? event.attendees.length : 0), 0);
-    
-    // Get revenue data from the Revenue model
+
+    const events = await Event.find({ 
+  $or: [
+    { createdBy: vendorId },
+    { createdBy: req.user.vendorId },
+    { createdBy: req.user.id }
+  ]
+});
+
+    // Active/ongoing events using real liveStatus (not stale static field)
+   const activeEvents = events.filter(event => {
+  const status = getLiveStatus(event);
+  console.log(`Event: ${event.name}, startTime: ${event.startTime}, endTime: ${event.endTime}, status: ${status}, now: ${new Date()}`);
+  return status === 'ongoing' || status === 'upcoming';
+}).length;
+
+    const totalRegistrations = events.reduce(
+      (sum, event) => sum + (event.attendees ? event.attendees.length : 0), 0
+    );
+
+    // Revenue comes ONLY from the Revenue collection, excluding cancelled/refunded
     const Revenue = require('../models/Revenue');
-    const revenueData = await Revenue.find({ vendor: vendorId });
+    const revenueData = await Revenue.find({
+      vendor: vendorId,
+      status: { $ne: 'refunded' }
+    });
     const totalRevenue = revenueData.reduce((sum, item) => sum + (item.netAmount || 0), 0);
-    
+
     res.json({
       totalEvents: events.length,
       activeEvents,
@@ -483,46 +495,7 @@ router.delete('/events/:id', verifyToken, verifyVendor, async (req, res) => {
   }
 });
 
-// Get vendor stats
-router.get('/stats', verifyToken, verifyVendor, async (req, res) => {
-  try {
-    const vendorId = req.user.id;
-    
-    // Get total events
-    const totalEvents = await Event.countDocuments({ createdBy: vendorId });
-    
-    // Get active events (events that haven't ended yet)
-    const activeEvents = await Event.countDocuments({ 
-      createdBy: vendorId,
-      endDate: { $gt: new Date() }
-    });
-    
-    // Get total registrations
-    const totalRegistrations = await Event.aggregate([
-      { $match: { createdBy: vendorId } },
-      { $group: { _id: null, total: { $sum: { $size: "$attendees" } } } }
-    ]).then(result => result[0]?.total || 0);
-    
-    // Get total revenue (assuming events have a ticketPrice field)
-    const totalRevenue = await Event.aggregate([
-      { $match: { createdBy: vendorId } },
-      { $group: { 
-        _id: null, 
-        total: { $sum: { $multiply: ["$ticketPrice", { $size: "$attendees" }] } } 
-      } }
-    ]).then(result => result[0]?.total || 0);
 
-    res.json({
-      totalEvents,
-      activeEvents,
-      totalRegistrations,
-      totalRevenue
-    });
-  } catch (error) {
-    console.error('Error fetching vendor stats:', error);
-    res.status(500).json({ message: 'Error fetching vendor stats' });
-  }
-});
 
 // Get vendor's registrations (all attendees for all vendor events)
 router.get('/registrations', verifyToken, verifyVendor, async (req, res) => {
@@ -547,38 +520,12 @@ router.get('/registrations', verifyToken, verifyVendor, async (req, res) => {
   }
 });
 
-// Fix stats route to use attendees
-router.get('/stats', verifyToken, verifyVendor, async (req, res) => {
-  try {
-    const totalEvents = await Event.countDocuments({ createdBy: req.user.id, createdByModel: 'Vendor' });
-    const activeEvents = await Event.countDocuments({ 
-      createdBy: req.user.id,
-      createdByModel: 'Vendor',
-      status: 'ongoing',
-      endDate: { $gte: new Date() }
-    });
-    
-    const events = await Event.find({ createdBy: req.user.id, createdByModel: 'Vendor' })
-      .populate('attendees', 'name email');
-    const totalRegistrations = events.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
-    const totalRevenue = events.reduce((sum, event) => sum + (event.price || 0) * (event.attendees?.length || 0), 0);
-
-    res.json({
-      totalEvents,
-      activeEvents,
-      totalRegistrations,
-      totalRevenue
-    });
-  } catch (error) {
-    console.error('Error fetching vendor stats:', error);
-    res.status(500).json({ message: 'Error fetching statistics' });
-  }
-});
 
 // Get vendor profile
-router.get('/profile', verifyVendor, async (req, res) => {
+router.get('/profile', verifyToken, verifyVendor, async (req, res) => {
   try {
-    const vendorId = req.vendor.id;
+    // FIX: verifyToken `req.user` set karta hai, is liye hum req.user use karenge
+    const vendorId = req.user.vendorId || req.user.id;
     
     // Get data from both models
     const [user, vendor] = await Promise.all([

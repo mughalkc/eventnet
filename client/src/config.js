@@ -19,14 +19,51 @@
 // export default config;
 
 
+// const config = {
+//   apiUrl: 'https://eventnet-production.up.railway.app/api',
+//   googleMapsApiKey: '',
+//   maxImageSize: 5 * 1024 * 1024,
+//   defaultMapLocation: {
+//     lat: 31.5204,
+//     lng: 74.3587
+//   }
+// };
+
+// export default config;
+
+
+const isDevelopment = import.meta.env.DEV;
+
+const apiUrl = isDevelopment
+  ? 'http://localhost:5001/api'
+  : 'https://eventnet-production.up.railway.app/api';
+
 const config = {
-  apiUrl: 'https://eventnet-production.up.railway.app/api',
+ 
+  apiUrl,
+
   googleMapsApiKey: '',
+
+  // Maximum image upload size: 5 MB
   maxImageSize: 5 * 1024 * 1024,
+
+  // Default map location
   defaultMapLocation: {
     lat: 31.5204,
     lng: 74.3587
   }
 };
 
+
 export default config;
+
+
+
+
+
+
+
+
+
+
+

@@ -190,6 +190,15 @@ const dropdownRef = useRef(null);
                     >
                       Profile
                     </Link>
+
+                     <Link
+                      to="/contact"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      Contact Us
+                    </Link>
+
                     <button
                       onClick={() => {
                         handleLogout();
@@ -221,6 +230,10 @@ const dropdownRef = useRef(null);
                   className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
                 >
                   Vendor Registration
+                </Link>
+                <Link 
+                to="/contact">
+                  Contact Us
                 </Link>
               </div>
             )}

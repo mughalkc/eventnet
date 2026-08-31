@@ -9,10 +9,14 @@ import Login from './pages/Login'
 import RegisterUser from './pages/RegisterUser'
 import CreateEvent from './pages/CreateEvent'
 import EventDetails from './pages/EventDetails'
+import ContactUs from './pages/ContactUs'
+import ContactMessages from './pages/ContactMessages'
+import EventCheckin from './pages/EventCheckin'
 import EventList from './pages/EventList'
 import UserEvents from './pages/UserEvents'
 import MyTickets from './pages/MyTickets'
 import VendorDashboard from './pages/vendor/VendorDashboard'
+//import VendorMessages from './pages/vendor/VendorMessages'
 import VendorEvents from './pages/vendor/VendorEvents'
 import VendorRegistration from './pages/vendor/VendorRegistration'
 import VendorRegistrations from './pages/vendor/VendorRegistrations'
@@ -65,11 +69,13 @@ function App() {
           <Route path="/register-organizer" element={<RegisterOrganizer />} />
           <Route path="/events" element={<EventList />} />
           <Route path="/events/:eventId" element={<EventDetails />} />
+          <Route path="/checkin/:eventId" element={<EventCheckin />} />
           <Route path="/events/:eventId/checkout" element={<PaymentPage />} />
           <Route path="/payment/:eventId" element={<PaymentPage />} />
           <Route path="/vendor/register" element={<VendorRegistration />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<ContactUs />} />
           
           {/* Protected Vendor Routes */}
           <Route
@@ -85,6 +91,8 @@ function App() {
                   <Route path="registrations" element={<VendorRegistrations />} />
                   <Route path="revenue" element={<VendorRevenue />} />
                   <Route path="qr-codes" element={<VendorQRCodes />} />
+                  <Route path="messages" element={<ContactMessages />} />
+                {/*  <Route path="messages" element={<VendorMessages />} /> */}
                 </Routes>
               </ProtectedRoute>
             }

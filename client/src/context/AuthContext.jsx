@@ -23,21 +23,104 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const checkAuthStatus = async () => {
+const checkAuthStatus = async () => {
     try {
-      const response = await axios.get(`${config.apiUrl}/auth/me`)
-      setUser({
-        ...response.data,
-        id: response.data._id // Ensure we have both _id and id
-      })
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error("Token missing")
+
+      // Token decoding
+      const payloadBase64 = token.split('.')[1]
+      if (!payloadBase64) throw new Error("Invalid token format")
+      
+      const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+
+      // DEBUG: Check karein token mein kya aa raha hai
+      console.log("👉 DECODED PAYLOAD:", payload);
+
+      if (payload.role === 'vendor' || payload.vendorId !== undefined) {
+        
+        console.log("👉 VENDOR API CALLING...");
+        
+        // Yahan maine explicit header add kiya hai jo aap ke purane code mein tha
+        const response = await axios.get(`${config.apiUrl}/vendor/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        setUser({
+          id: response.data.id || response.data._id || payload.vendorId || payload.id,
+          name: response.data.businessName || response.data.name || 'Vendor',
+          email: response.data.email || response.data.contactEmail,
+          role: 'vendor',
+          status: response.data.status
+        });
+
+        console.log("👉 VENDOR LOGIN SUCCESSFUL ON REFRESH!");
+
+      } else {
+        
+        console.log("👉 REGULAR USER API CALLING...");
+        const response = await axios.get(`${config.apiUrl}/auth/me`, {
+           headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setUser({
+          ...response.data,
+          id: response.data._id || response.data.id
+        });
+      }
     } catch (error) {
-      console.error('Auth check failed:', error)
+      console.error('❌ AUTH CHECK FAILED:', error.response?.data || error.message);
+      if (error.response?.status === 401 || error.response?.status === 403 || error.response?.status === 404) {
+         console.error(`Backend ne request reject kar di. Status: ${error.response.status}`);
+      }
+      
       localStorage.removeItem('token')
       delete axios.defaults.headers.common['Authorization']
+      setUser(null)
     } finally {
       setLoading(false)
     }
   }
+//     // Vendor authentication
+   
+//     const vendorResponse = await axios.get(
+//       `${config.apiUrl}/vendor/profile`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`
+//         }
+//       }
+//     )
+
+//     const vendor = vendorResponse.data
+//     // Restore vendor user state after page refresh
+    
+//     setUser({
+//       id: vendor.id,
+//       name: vendor.businessName || 'Vendor',
+//       email: vendor.email,
+//       role: 'vendor',
+//       status: vendor.status
+//     })
+
+//   } catch (error) {
+
+//     console.error('Auth check failed:', error)
+
+//     // Token is invalid/expired
+//     localStorage.removeItem('token')
+
+//     delete axios.defaults.headers.common['Authorization']
+
+//     setUser(null)
+
+//   } finally {
+//     setLoading(false)
+//   }
+// }
 
   const login = async (email, password, role) => {
     try {

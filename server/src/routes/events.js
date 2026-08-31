@@ -438,18 +438,71 @@ router.post('/:id/register', verifyToken, async (req, res) => {
   }
 })
 
+// Self check-in via QR code (mark attendance)
+router.post('/:id/self-checkin', verifyToken, async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id)
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' })
+    }
+
+    const isRegistered = event.attendees.some(
+      attendeeId => attendeeId.toString() === req.user.id
+    )
+    if (!isRegistered) {
+      return res.status(400).json({ message: 'You are not registered for this event' })
+    }
+
+    if (!event.checkIns) event.checkIns = []
+
+    const existingCheckIn = event.checkIns.find(
+      c => c.user.toString() === req.user.id
+    )
+
+    if (existingCheckIn && existingCheckIn.checkedIn) {
+      return res.status(400).json({ message: 'Attendance already marked' })
+    }
+
+    const { latitude, longitude } = req.body
+
+    if (existingCheckIn) {
+      existingCheckIn.checkedIn = true
+      existingCheckIn.checkedInAt = new Date()
+      if (latitude && longitude) {
+        existingCheckIn.latitude = latitude
+        existingCheckIn.longitude = longitude
+      }
+    } else {
+      event.checkIns.push({
+        user: req.user.id,
+        checkedIn: true,
+        checkedInAt: new Date(),
+        latitude: latitude || null,
+        longitude: longitude || null
+      })
+    }
+
+    await event.save()
+
+    res.json({ message: 'Attendance marked successfully!' })
+  } catch (error) {
+    console.error('Self check-in error:', error)
+    res.status(500).json({ message: 'Failed to mark attendance' })
+  }
+})
+
 // Cancel registration
 router.post('/:id/cancel', verifyToken, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate('attendees', 'name email')
+      .populate('createdBy', 'name email')
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' })
     }
 
     let userIdToRemove = req.user.id;
-    // If vendor, allow removing any user
     if (req.user.role === 'vendor' && req.body.userId) {
       userIdToRemove = req.body.userId;
     }
@@ -462,8 +515,43 @@ router.post('/:id/cancel', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Not registered for this event' })
     }
 
+    const cancelledUser = event.attendees[attendeeIndex]
     event.attendees.splice(attendeeIndex, 1)
     await event.save()
+
+    // Reduce revenue + notify vendor
+    try {
+      const Revenue = require('../src/models/Revenue')
+      const Ticket = require('../src/models/Ticket')
+
+      const ticket = await Ticket.findOne({ event: event._id, user: userIdToRemove })
+      if (ticket) {
+        await Revenue.findOneAndUpdate(
+          { event: event._id, ticket: ticket._id },
+          { $set: { status: 'refunded', netAmount: 0 } }
+        )
+      }
+
+      const emailService = require('../src/utils/emailService')
+      const vendorEmail = event.createdBy?.email
+      if (vendorEmail) {
+        await emailService.sendEmail({
+          to: vendorEmail,
+          subject: `Ticket Cancelled: ${event.name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+              <h2 style="color: #4169E1;">EventNet</h2>
+              <p>A registration has been cancelled for your event <strong>${event.name}</strong>.</p>
+              <p><strong>Client Name:</strong> ${cancelledUser.name}</p>
+              <p><strong>Client Email:</strong> ${cancelledUser.email}</p>
+              <p>Your revenue and attendee count have been updated accordingly.</p>
+            </div>
+          `
+        })
+      }
+    } catch (notifyError) {
+      console.error('Error updating revenue/notifying vendor:', notifyError)
+    }
 
     res.json({ message: 'Successfully cancelled registration' })
   } catch (error) {

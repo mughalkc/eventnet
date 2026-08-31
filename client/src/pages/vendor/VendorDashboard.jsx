@@ -8,7 +8,8 @@ import {
   ChartBarIcon,
   QrCodeIcon,
   PlusIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
 const VendorDashboard = () => {
@@ -26,17 +27,9 @@ const VendorDashboard = () => {
   const [showRegistrationsModal, setShowRegistrationsModal] = useState(false);
   const [registrations, setRegistrations] = useState([]);
 
-  useEffect(() => {
+useEffect(() => {
     fetchDashboardData();
-    fetchEvents();
-    fetchAllRegistrations();
   }, []);
-
-  useEffect(() => {
-    if (events.length > 0) {
-      fetchAllRegistrations();
-    }
-  }, [events]);
 
   const fetchDashboardData = async () => {
     try {
@@ -372,6 +365,14 @@ const VendorDashboard = () => {
           <QrCodeIcon className="h-6 w-6 mr-2" />
           <span>Generate QR Codes</span>
         </Link>
+        {/* Contact Messages */}
+        <Link
+          to="/vendor-dashboard/messages"
+          className="flex items-center p-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all"
+        >
+          <EnvelopeIcon className="h-6 w-6 mr-2" />
+          <span>Messages</span>
+        </Link>
       </div>
 
       {/* Stats Grid */}
@@ -396,7 +397,7 @@ const VendorDashboard = () => {
         />
         <DashboardCard
           title="Total Revenue"
-          value={`$${stats.totalRevenue.toFixed(2)}`}
+          value={`Rs ${stats.totalRevenue.toFixed(2)}`}
           icon={ChartBarIcon}
           bgColor="bg-pink-500"
         />

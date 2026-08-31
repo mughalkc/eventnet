@@ -83,23 +83,23 @@ router.get('/vendor/revenue/stats', verifyToken, async (req, res) => {
     const stats = await Revenue.aggregate([
       { $match: { vendor: new mongoose.Types.ObjectId(vendorId) } },
       { $group: {
-          _id: null,
-          totalRevenue: { $sum: '$amount' },
-          totalFees: { $sum: '$fee' },
-          totalNetAmount: { $sum: '$netAmount' },
-          totalTickets: { $sum: '$quantity' },
-          pendingRevenue: {
-            $sum: {
-              $cond: [{ $eq: ['$status', 'pending'] }, '$amount', 0]
-            }
-          },
-          paidRevenue: {
-            $sum: {
-              $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0]
+            _id: null,
+            totalRevenue: { $sum: '$netAmount' },
+            totalFees: { $sum: '$fee' },
+            totalNetAmount: { $sum: '$netAmount' },
+            totalTickets: { $sum: '$quantity' },
+            pendingRevenue: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'pending'] }, '$netAmount', 0]
+              }
+            },
+            paidRevenue: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'paid'] }, '$netAmount', 0]
+              }
             }
           }
         }
-      }
     ])
     
     // If no revenue data exists yet, return zeros

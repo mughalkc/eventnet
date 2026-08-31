@@ -69,6 +69,7 @@ emailService.init();
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/contact', require('./routes/contact'));
 app.use('/api/events', eventRoutes);
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/admin', adminRoutes);

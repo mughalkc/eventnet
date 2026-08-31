@@ -64,11 +64,12 @@ const VendorRevenue = () => {
       
       console.log('Total registrations found:', totalRegistrations)
       
-      // Calculate revenue statistics
-      const totalRevenue = revenueData.revenue.reduce((sum, item) => sum + item.amount, 0)
-      const pendingRevenue = revenueData.revenue.filter(item => item.status === 'pending').reduce((sum, item) => sum + item.amount, 0)
-      const paidRevenue = revenueData.revenue.filter(item => item.status === 'paid').reduce((sum, item) => sum + item.amount, 0)
-      
+    
+     // Calculate revenue statistics (using netAmount to match vendor dashboard)
+      const totalRevenue = revenueData.revenue.reduce((sum, item) => sum + (item.netAmount || 0), 0)
+      const pendingRevenue = revenueData.revenue.filter(item => item.status === 'pending').reduce((sum, item) => sum + (item.netAmount || 0), 0)
+      const paidRevenue = revenueData.revenue.filter(item => item.status === 'paid').reduce((sum, item) => sum + (item.netAmount || 0), 0)
+
       setStats({
         totalRevenue,
         pendingRevenue,
@@ -108,11 +109,8 @@ const VendorRevenue = () => {
     return filtered
   }
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
+   const formatCurrency = (amount) => {
+    return `Rs ${Number(amount || 0).toFixed(2)}`
   }
   
   const formatDate = (dateString) => {

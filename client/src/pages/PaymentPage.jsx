@@ -408,6 +408,7 @@ export default function PaymentPage() {
                         <input
                           type="text"
                           name="cardNumber"
+                          autoComplete="off"
                           value={paymentDetails.cardNumber}
                           onChange={handleInputChange}
                           maxLength="19"
@@ -427,6 +428,7 @@ export default function PaymentPage() {
                         <input
                           type="text"
                           name="cardName"
+                          autoComplete="off"
                           value={paymentDetails.cardName}
                           onChange={handleInputChange}
                           placeholder="John Doe"
@@ -445,6 +447,7 @@ export default function PaymentPage() {
                         <input
                           type="text"
                           name="expiryDate"
+                          autoComplete="off"
                           value={paymentDetails.expiryDate}
                           onChange={handleInputChange}
                           placeholder="MM/YY"
@@ -460,6 +463,7 @@ export default function PaymentPage() {
                         <input
                           type="text"
                           name="cvv"
+                          autoComplete="off"
                           value={paymentDetails.cvv}
                           onChange={handleInputChange}
                           placeholder="123"
@@ -474,15 +478,15 @@ export default function PaymentPage() {
                     <div className="border-t border-gray-200 pt-4 mt-6">
                       <div className="flex justify-between text-sm mb-2">
                         <span>Subtotal</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <span>Rs{totalPrice.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm mb-2">
                         <span>Processing Fee</span>
-                        <span>${(totalPrice * 0.029 + 0.30).toFixed(2)}</span>
+                        <span>Rs{(totalPrice * 0.029 + 0.30).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between font-semibold text-lg mt-4">
                         <span>Total</span>
-                        <span>${(totalPrice + totalPrice * 0.029 + 0.30).toFixed(2)}</span>
+                        <span>Rs{(totalPrice + totalPrice * 0.029 + 0.30).toFixed(2)}</span>
                       </div>
                     </div>
 
@@ -587,7 +591,7 @@ export default function PaymentPage() {
                         )}
                       </div>
                       <div className="text-lg font-semibold">
-                        {ticket.price === 0 ? 'FREE' : `$${ticket.price}`}
+                        {ticket.price === 0 ? 'FREE' : `Rs ${ticket.price}`}
                       </div>
                     </div>
                   </div>
@@ -624,6 +628,7 @@ export default function PaymentPage() {
                   <input
                     type="text"
                     name="cardNumber"
+                    autoComplete="off"
                     value={paymentDetails.cardNumber}
                     onChange={handleInputChange}
                     maxLength="19"
@@ -643,6 +648,7 @@ export default function PaymentPage() {
                   <input
                     type="text"
                     name="cardName"
+                    autoComplete="off"
                     value={paymentDetails.cardName}
                     onChange={handleInputChange}
                     placeholder="John Doe"
@@ -661,6 +667,7 @@ export default function PaymentPage() {
                   <input
                     type="text"
                     name="expiryDate"
+                    autoComplete="off"
                     value={paymentDetails.expiryDate}
                     onChange={handleInputChange}
                     placeholder="MM/YY"
@@ -676,6 +683,7 @@ export default function PaymentPage() {
                   <input
                     type="text"
                     name="cvv"
+                    autoComplete="off"
                     value={paymentDetails.cvv}
                     onChange={handleInputChange}
                     placeholder="123"
@@ -690,15 +698,15 @@ export default function PaymentPage() {
               <div className="border-t border-gray-200 pt-4 mt-6">
                 <div className="flex justify-between text-sm mb-2">
                   <span>Subtotal</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>Rs{totalPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm mb-2">
                   <span>Processing Fee</span>
-                  <span>${(totalPrice * 0.029 + 0.30).toFixed(2)}</span>
+                  <span>Rs{(totalPrice * 0.029 + 0.30).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-lg mt-4">
                   <span>Total</span>
-                  <span>${(totalPrice + totalPrice * 0.029 + 0.30).toFixed(2)}</span>
+                  <span>Rs{(totalPrice + totalPrice * 0.029 + 0.30).toFixed(2)}</span>
                 </div>
               </div>
 
