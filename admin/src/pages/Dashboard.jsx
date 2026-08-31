@@ -114,12 +114,12 @@ const Dashboard = () => {
         
         // Filter events by month and sum revenue
         const monthEvents = events.filter(event => {
-          const eventDate = new Date(event.date)
+          const eventDate = new Date(event.startDate)
           return eventDate.getMonth() === month.getMonth() && eventDate.getFullYear() === month.getFullYear()
         })
         
         const monthRevenue = monthEvents.reduce((sum, event) => {
-          return sum + (event.price * (event.attendees?.length || 0))
+          return sum + ((event.registrations?.length || 0) * (event.price || 0))
         }, 0)
         
         monthlyRevenueData.push({ month: monthName, revenue: monthRevenue })

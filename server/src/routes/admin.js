@@ -26,10 +26,29 @@ router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
     });
     console.log(`Pending vendors: ${pendingVendors}`);
     
-    // Get active events - include both 'ongoing' and 'published' events
-    const activeEvents = await Event.countDocuments({ 
-      status: { $in: ['ongoing', 'published', 'upcoming'] } 
-    });
+    // Get currently active events based on start/end date and time
+        const now = new Date();
+
+        const allEvents = await Event.find({
+          status: { $nin: ['draft', 'cancelled', 'completed'] }
+        }).lean();
+
+        const activeEvents = allEvents.filter(event => {
+          if (!event.startDate || !event.endDate || !event.startTime || !event.endTime) {
+            return false;
+          }
+
+          const start = new Date(event.startDate);
+          const [startHours, startMinutes] = event.startTime.split(':').map(Number);
+          start.setHours(startHours, startMinutes, 0, 0);
+
+          const end = new Date(event.endDate);
+          const [endHours, endMinutes] = event.endTime.split(':').map(Number);
+          end.setHours(endHours, endMinutes, 0, 0);
+
+          return now >= start && now <= end;
+        }).length;
+
     console.log(`Active events: ${activeEvents}`);
     
     // Get total revenue from tickets
@@ -56,15 +75,7 @@ router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
       console.log(`Revenue from completed events: ${eventRevenue[0].total}`);
     }
     
-    // If we still don't have any revenue, add the BIRTHDAY BASH ticket revenue
-    if (totalRevenue === 0) {
-      // Check if BIRTHDAY BASH event exists
-      const birthdayBashEvent = await Event.findOne({ name: 'BIRTHDAY BASH' });
-      if (birthdayBashEvent) {
-        totalRevenue = 10.00; // The price of the BIRTHDAY BASH ticket
-        console.log('Adding BIRTHDAY BASH ticket revenue: $10.00');
-      }
-    }
+   
     
     console.log(`Total revenue: ${totalRevenue}`);
     
@@ -130,7 +141,38 @@ router.get('/events', verifyToken, verifyAdmin, async (req, res) => {
       .sort('-createdAt')
       .lean();
     
-    res.json(events);
+    const now = new Date();
+
+const eventsWithLiveStatus = events.map(event => {
+  let liveStatus = 'upcoming';
+
+  if (event.startDate && event.endDate && event.startTime && event.endTime) {
+    const start = new Date(event.startDate);
+    const [startHours, startMinutes] = event.startTime.split(':').map(Number);
+    start.setHours(startHours, startMinutes, 0, 0);
+
+    const end = new Date(event.endDate);
+    const [endHours, endMinutes] = event.endTime.split(':').map(Number);
+    end.setHours(endHours, endMinutes, 0, 0);
+
+    if (now < start) {
+      liveStatus = 'upcoming';
+    } else if (now >= start && now <= end) {
+      liveStatus = 'ongoing';
+    } else {
+      liveStatus = 'expired';
+    }
+  }
+
+  return {
+    ...event,
+    liveStatus
+  };
+});
+
+res.json(eventsWithLiveStatus);
+
+
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ message: 'Error fetching events' });
@@ -227,28 +269,6 @@ router.get('/events/:id/registrations', verifyToken, verifyAdmin, async (req, re
       });
     }
     
-    // If we still have no registrations and this is BIRTHDAY BASH, add a hardcoded one
-    if (registrations.length === 0 && event.name === 'BIRTHDAY BASH') {
-      // Add a hardcoded registration for BIRTHDAY BASH
-      const user = await User.findOne({ email: 'abdul@gmail.com' }).lean();
-      
-      const hardcodedRegistration = {
-        _id: '60d21b4667d0d8992e610c85',
-        event: req.params.id,
-        user: user || {
-          _id: '60d21b4667d0d8992e610c86',
-          name: 'Abdul Hameed',
-          email: 'abdul@gmail.com'
-        },
-        status: 'completed',
-        paymentAmount: 10.00,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      console.log('Adding hardcoded registration for BIRTHDAY BASH');
-      registrations.push(hardcodedRegistration);
-    }
     
     res.json(registrations);
   } catch (error) {
@@ -287,12 +307,6 @@ router.get('/events/:id/insights', verifyToken, verifyAdmin, async (req, res) =>
     if (confirmedTickets.length > 0) {
       const ticketRevenue = confirmedTickets.reduce((sum, ticket) => sum + (ticket.totalAmount || 0), 0);
       totalRevenue += ticketRevenue;
-    }
-    
-    // For BIRTHDAY BASH event, ensure we show at least one attendee and $10 revenue
-    if (event.name === 'BIRTHDAY BASH' && totalAttendees === 0) {
-      const totalAttendees = 1;
-      totalRevenue = 10.00;
     }
     
     const insights = {

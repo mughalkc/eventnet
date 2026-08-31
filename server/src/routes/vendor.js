@@ -342,7 +342,6 @@ router.get('/stats', verifyToken, verifyVendor, async (req, res) => {
     // Active/ongoing events using real liveStatus (not stale static field)
    const activeEvents = events.filter(event => {
   const status = getLiveStatus(event);
-  console.log(`Event: ${event.name}, startTime: ${event.startTime}, endTime: ${event.endTime}, status: ${status}, now: ${new Date()}`);
   return status === 'ongoing' || status === 'upcoming';
 }).length;
 

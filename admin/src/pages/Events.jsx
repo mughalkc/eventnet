@@ -196,13 +196,14 @@ const Events = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                       <div className="text-sm text-gray-600">
-                        {/* Show 1 for the BIRTHDAY BASH event to match what we see in other parts of the app */}
-                        {event.name === 'BIRTHDAY BASH' ? 1 : (event.registrations?.length || 0)}
+                        
+                        {event.registrations?.length || 0}
+                        
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                       <div className="text-sm font-medium text-gray-900">
-                        ${event.name === 'BIRTHDAY BASH' ? '10.00' : ((event.registrations?.length || 0) * (event.price || 0)).toFixed(2)}
+                         ${((event.registrations?.length || 0) * (event.price || 0)).toFixed(2)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
