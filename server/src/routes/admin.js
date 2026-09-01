@@ -53,14 +53,15 @@ router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
       return now >= start && now <= end;
     }).length;
 
-    let totalRevenue = 0;
-    const ticketRevenue = await Ticket.aggregate([
-      { $match: { paymentStatus: { $in: ['completed', 'paid'] } } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        const Revenue = require('../models/Revenue');
+        let totalRevenue = 0;
+        const revenueAgg = await Revenue.aggregate([
+      { $match: { status: { $ne: 'refunded' } } },
+      { $group: { _id: null, total: { $sum: '$netAmount' } } }
     ]);
     
-    if (ticketRevenue.length > 0 && ticketRevenue[0].total) {
-      totalRevenue = ticketRevenue[0].total;
+    if (revenueAgg.length > 0 && revenueAgg[0].total) {
+      totalRevenue = revenueAgg[0].total;
     }
     
     res.json({

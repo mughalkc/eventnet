@@ -15,6 +15,7 @@ import UserManagement from './pages/UserManagement'
 import Tickets from './pages/Tickets'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Messages from './pages/Messages'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -67,6 +68,8 @@ function App() {
           <Route path="tickets" element={<Tickets />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="messages" element={<Messages />} />
+          
         </Route>
         <Route path="/" element={<Navigate to="/admin" />} />
       </Routes>
