@@ -356,6 +356,39 @@ async function sendEventNotification(event, userId, type, user = null) {
       
       return sendEmail(mailOptions);
     }
+
+/**
+ * Send missed event / absent notification email
+ */
+async function sendAbsentNotificationEmail(email, name, event) {
+  const mailOptions = {
+    from: `"EventNet" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: `You missed: ${event.name}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h1 style="color: #d9534f;">Missed Event Alert</h1>
+        </div>
+        <div style="margin-bottom: 20px;">
+          <p>Hello ${name},</p>
+          <p>We noticed that you didn't mark your attendance for <strong>${event.name}</strong>, which has now ended.</p>
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <p><strong>Event Name:</strong> ${event.name}</p>
+            <p><strong>Status:</strong> Marked as Absent / Missed</p>
+          </div>
+          <p>If you actually attended the event but forgot to check in, please contact the event vendor or admin.</p>
+        </div>
+        <div style="text-align: center; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+          <p style="margin: 0; color: #6c757d; font-size: 14px;">&copy; ${new Date().getFullYear()} EventNet. All rights reserved.</p>
+        </div>
+      </div>
+    `
+  };
+
+  return sendEmail(mailOptions);
+}
+
   } catch (error) {
     console.error('Send notification error:', error);
     return { error: 'Failed to send event notification' };

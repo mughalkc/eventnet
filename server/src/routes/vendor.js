@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const { verifyToken, verifyVendor } = require('../middleware/auth');
 const Event = require('../models/Event');
 const User = require('../models/User');
+const emailService = require('../utils/emailService');
 const bcrypt = require('bcryptjs');
 
 // Helper: figure out if an event is upcoming, ongoing, or expired
@@ -337,6 +338,50 @@ router.get('/stats', verifyToken, verifyVendor, async (req, res) => {
     { createdBy: req.user.vendorId },
     { createdBy: req.user.id }
   ]
+});
+
+// Get vendor's attendance list (Present vs Absent Breakdown)
+router.get('/events/:id/attendance', verifyToken, verifyVendor, async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id).populate('attendees', 'name email avatar photo');
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+
+    const checkedInUserIds = new Set(
+      (event.checkIns || [])
+        .filter(c => c.checkedIn)
+        .map(c => c.user?._id?.toString() || c.user?.toString())
+    );
+
+    const presentList = [];
+    const absentList = [];
+
+    (event.attendees || []).forEach(attendee => {
+      const isPresent = checkedInUserIds.has(attendee._id.toString());
+      const attendeeData = {
+        _id: attendee._id,
+        name: attendee.name,
+        email: attendee.email,
+        status: isPresent ? 'present' : 'absent'
+      };
+
+      if (isPresent) {
+        presentList.push(attendeeData);
+      } else {
+        absentList.push(attendeeData);
+      }
+    });
+
+    res.json({
+      totalAttendees: event.attendees.length,
+      presentCount: presentList.length,
+      absentCount: absentList.length,
+      presentList,
+      absentList
+    });
+  } catch (error) {
+    console.error('Attendance fetch error:', error);
+    res.status(500).json({ message: 'Error fetching attendance details' });
+  }
 });
 
     // Active/ongoing events using real liveStatus (not stale static field)
@@ -837,25 +882,23 @@ router.post('/events/check-conflict', verifyToken, verifyVendor, async (req, res
 // No body needed — backend figures out who did not check in
 router.post('/events/:id/send-absent-emails', verifyToken, verifyVendor, async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id)
-      .populate('attendees', 'name email')
-      const checkedInUserIds = new Set(
-        (event.checkIns || [])
-          .filter(c => c.checkedIn)
-          .map(c => c.user?._id?.toString() || c.user?.toString())
-      );
-
+    const event = await Event.findById(req.params.id).populate('attendees', 'name email');
+    
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
     // Only the vendor who created the event can do this
-   const vendorId = req.user.id || req.user.vendorId
-if (event.createdBy.toString() !== vendorId.toString()) {
-  return res.status(403).json({ message: 'Not authorized' });
-}
+    const vendorId = req.user.id || req.user.vendorId;
+    if (event.createdBy.toString() !== vendorId.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
 
-  
+    const checkedInUserIds = new Set(
+      (event.checkIns || [])
+        .filter(c => c.checkedIn)
+        .map(c => c.user?._id?.toString() || c.user?.toString())
+    );
 
-    const absentAttendees = event.attendees.filter(
+    const absentAttendees = (event.attendees || []).filter(
       attendee => !checkedInUserIds.has(attendee._id.toString())
     );
 
@@ -863,15 +906,34 @@ if (event.createdBy.toString() !== vendorId.toString()) {
       return res.json({ message: 'All attendees checked in — no absent emails to send.', sent: 0 });
     }
 
-    // Import nodemailer / use the existing transporter approach
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
+    // Centralized Email Service Integration
+    let sentCount = 0;
+    const errors = [];
+
+    for (const attendee of absentAttendees) {
+      if (!attendee.email) continue;
+      try {
+        if (emailService.sendAbsentNotificationEmail) {
+          await emailService.sendAbsentNotificationEmail(attendee.email, attendee.name, event);
+        }
+        sentCount++;
+      } catch (emailError) {
+        errors.push(attendee.email);
+        console.error('Failed to send absent email to', attendee.email, emailError.message);
       }
+    }
+
+    res.json({
+      message: `Absent emails sent to ${sentCount} out of ${absentAttendees.length} absent attendees.`,
+      sent: sentCount,
+      failed: errors.length,
+      failedEmails: errors
     });
+  } catch (error) {
+    console.error('Send absent emails error:', error);
+    res.status(500).json({ message: 'Failed to send absent emails' });
+  }
+});
 
     const eventDate = new Date(event.startDate).toDateString();
     const eventName = event.name;
