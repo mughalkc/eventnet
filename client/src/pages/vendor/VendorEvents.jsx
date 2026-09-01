@@ -99,7 +99,7 @@ const VendorEvents = () => {
     }
   };
 
-  const handleShareEvent = async (eventId) => {
+ const handleShareEvent = async (eventId) => {
     try {
       const eventUrl = `${window.location.origin}/events/${eventId}`;
       await navigator.clipboard.writeText(eventUrl);
@@ -108,6 +108,22 @@ const VendorEvents = () => {
       toast.error('Failed to copy event link');
     }
   };
+
+  // 🔹 Live Status Calculate for Helper Function
+  const calculateLiveStatus = (event) => {
+    if (event.liveStatus) return event.liveStatus;
+    
+    const now = new Date();
+    const start = new Date(event.startDate || event.date);
+    const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 3 * 60 * 60 * 1000); // 3 Hours default
+
+    if (now < start) return 'upcoming';
+    if (now >= start && now <= end) return 'ongoing';
+    return 'expired';
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -124,7 +140,7 @@ const VendorEvents = () => {
 
   const filteredEvents = activeTab === 'all'
     ? events
-    : events.filter(event => event.liveStatus === activeTab);
+    : events.filter(event => calculateLiveStatus(event) === activeTab);
 
   if (loading) {
     return (
@@ -166,8 +182,9 @@ const VendorEvents = () => {
             {tab.label}
             {tab.key !== 'all' && (
               <span className="ml-1 text-xs text-gray-400">
-                ({events.filter(e => e.liveStatus === tab.key).length})
+                ({events.filter(e => calculateLiveStatus(e) === tab.key).length})
               </span>
+            )}
             )}
           </button>
         ))}
@@ -221,9 +238,9 @@ const VendorEvents = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(event.liveStatus)}`}>
-                      {event.liveStatus === 'expired' ? 'Expired' :
-                       event.liveStatus === 'ongoing' ? 'Ongoing' : 'Upcoming'}
+                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(calculateLiveStatus(event))}`}>
+                      {calculateLiveStatus(event) === 'expired' ? 'Expired' :
+                       calculateLiveStatus(event) === 'ongoing' ? 'Ongoing' : 'Upcoming'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -259,7 +276,7 @@ const VendorEvents = () => {
                       >
                         <TrashIcon className="h-5 w-5" />
                       </button>
-                      {event.liveStatus === 'expired' && (
+                    {calculateLiveStatus(event) === 'expired' && (
                         <button
                           onClick={() => handleSendAbsentEmails(event._id, event.name)}
                           className="text-yellow-600 hover:text-yellow-900"

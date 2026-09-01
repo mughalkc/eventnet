@@ -7,13 +7,10 @@ import {
   CalendarIcon, 
   MapPinIcon, 
   UserGroupIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon
+  CheckCircleIcon
 } from '@heroicons/react/24/outline'
 
 // Dynamic Status Calculation Helper Function
-
 const getCalculatedStatus = (event) => {
   if (!event || !event.startDate) return 'upcoming';
 
@@ -61,7 +58,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
   const [imageError, setImageError] = useState(false)
   const { user } = useAuth()
 
-  // Calculate live dynamic status on frontend
+  // Dynamic live calculation on client
   const dynamicStatus = getCalculatedStatus(event);
 
   const isRegistered = user && event.attendees?.some(attendee => {
@@ -169,7 +166,7 @@ const EventCard = ({ event, onRegister, onCancel }) => {
         </div>
 
         <div className="flex justify-between items-center">
-          {/* Real-time Dynamic Status Badge */}
+          {/* Dynamic Real-time Status Badge */}
           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
             dynamicStatus === 'upcoming' ? 'bg-blue-100 text-blue-800' :
             dynamicStatus === 'ongoing' ? 'bg-green-100 text-green-800' :
@@ -239,7 +236,7 @@ const EventList = () => {
 
   useEffect(() => {
     if (!user) return;
-    const socket = new WebSocket(`wss://eventnet-production.up.railway.app/ws/events/${user.id}`);
+    const socket = new WebSocket(`wss://eventnet-production.up.railway.app/ws/events/${user.id || user._id}`);
     
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -256,14 +253,6 @@ const EventList = () => {
 
     setWs(socket);
     return () => socket.close();
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/login')
-      return
-    }
-    fetchEvents()
   }, [user]);
 
   const fetchEvents = async (retryCount = 0) => {
@@ -295,6 +284,14 @@ const EventList = () => {
     }
   }
 
+  useEffect(() => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    fetchEvents()
+  }, [user, navigate]);
+
   const onRegister = async (eventId) => {
     try {
       const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
@@ -312,17 +309,19 @@ const EventList = () => {
 
       toast.success('Successfully registered for the event!')
       
+      const userIdStr = user.id || user._id;
+
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'registration_update',
           eventId: eventId,
-          userId: user.id
+          userId: userIdStr
         }))
       }
 
       const formattedUser = {
-        _id: user.id || user._id,
-        id: user.id || user._id,
+        _id: userIdStr,
+        id: userIdStr,
         name: user.name,
         email: user.email
       };
@@ -341,13 +340,15 @@ const EventList = () => {
 
   const onCancel = async (eventId) => {
     try {
+      const userIdStr = user.id || user._id;
+
       const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ userId: user.id })
+        body: JSON.stringify({ userId: userIdStr })
       });
 
       if (!response.ok) throw new Error('Cancellation failed');
@@ -358,14 +359,14 @@ const EventList = () => {
         ws.send(JSON.stringify({
           type: 'registration_update',
           eventId: eventId,
-          userId: user.id
+          userId: userIdStr
         }))
       }
 
       setEvents(prevEvents => 
         prevEvents.map(evt => 
           evt._id === eventId 
-            ? { ...evt, attendees: evt.attendees?.filter(a => (a._id || a.id) !== user.id) || [] } 
+            ? { ...evt, attendees: evt.attendees?.filter(a => (a._id || a.id || a).toString() !== userIdStr.toString()) || [] } 
             : evt
         )
       )
