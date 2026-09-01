@@ -99,7 +99,7 @@ const VendorEvents = () => {
     }
   };
 
- const handleShareEvent = async (eventId) => {
+  const handleShareEvent = async (eventId) => {
     try {
       const eventUrl = `${window.location.origin}/events/${eventId}`;
       await navigator.clipboard.writeText(eventUrl);
@@ -109,21 +109,46 @@ const VendorEvents = () => {
     }
   };
 
-  // 🔹 Live Status Calculate for Helper Function
   const calculateLiveStatus = (event) => {
-    if (event.liveStatus) return event.liveStatus;
-    
-    const now = new Date();
-    const start = new Date(event.startDate || event.date);
-    const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 3 * 60 * 60 * 1000); // 3 Hours default
+    if (!event) return 'upcoming';
 
-    if (now < start) return 'upcoming';
-    if (now >= start && now <= end) return 'ongoing';
-    return 'expired';
+    try {
+      const rawDate = event.startDate || event.date;
+      if (!rawDate) return event.status || 'upcoming';
+
+      const baseDate = new Date(rawDate);
+      if (isNaN(baseDate.getTime())) return event.status || 'upcoming';
+
+      const parseTimeComponents = (timeStr, defaultHour, defaultMin) => {
+        if (!timeStr) return { hour: defaultHour, minute: defaultMin };
+        const match = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+        if (match) {
+          let h = parseInt(match[1], 10);
+          const m = parseInt(match[2], 10);
+          const p = match[3];
+          if (p) {
+            if (p.toUpperCase() === 'PM' && h < 12) h += 12;
+            if (p.toUpperCase() === 'AM' && h === 12) h = 0;
+          }
+          return { hour: h, minute: m };
+        }
+        return { hour: defaultHour, minute: defaultMin };
+      };
+
+      const startParts = parseTimeComponents(event.startTime, 0, 0);
+      const endParts = parseTimeComponents(event.endTime, 23, 59);
+
+      const start = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), startParts.hour, startParts.minute, 0);
+      const end = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), endParts.hour, endParts.minute, 59);
+      const now = new Date();
+
+      if (now.getTime() > end.getTime()) return 'expired';
+      if (now.getTime() >= start.getTime() && now.getTime() <= end.getTime()) return 'ongoing';
+      return 'upcoming';
+    } catch (err) {
+      return event.status || 'upcoming';
+    }
   };
-
-  const getStatusColor = (status) => {
-    switch (status) {
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -162,7 +187,6 @@ const VendorEvents = () => {
         </Link>
       </div>
 
-      {/* Status Filter Tabs */}
       <div className="flex space-x-2 mb-6 border-b border-gray-200">
         {[
           { key: 'all', label: 'All' },
@@ -184,7 +208,6 @@ const VendorEvents = () => {
               <span className="ml-1 text-xs text-gray-400">
                 ({events.filter(e => calculateLiveStatus(e) === tab.key).length})
               </span>
-            )}
             )}
           </button>
         ))}
@@ -213,82 +236,85 @@ const VendorEvents = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEvents.map((event) => (
-                <tr key={event._id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {event.name || 'Unnamed Event'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {event.location && typeof event.location === 'object' 
-                            ? (event.location.isVirtual ? 'Virtual Event' : event.location.address) 
-                            : event.location || 'No location provided'}
+              {filteredEvents.map((event) => {
+                const liveStatus = calculateLiveStatus(event);
+                return (
+                  <tr key={event._id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {event.name || 'Unnamed Event'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {event.location && typeof event.location === 'object' 
+                              ? (event.location.isVirtual ? 'Virtual Event' : event.location.address) 
+                              : event.location || 'No location provided'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {event.startDate ? new Date(event.startDate).toLocaleDateString() : 'Invalid Date'}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {event.startTime || 'No time specified'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(calculateLiveStatus(event))}`}>
-                      {calculateLiveStatus(event) === 'expired' ? 'Expired' :
-                       calculateLiveStatus(event) === 'ongoing' ? 'Ongoing' : 'Upcoming'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {event.attendees ? event.attendees.length : 0} registrations
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-3">
-                      <Link
-                        to={`/vendor-dashboard/events/${event._id}/edit`}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Edit Event"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </Link>
-                      <button
-                        onClick={() => handleShareEvent(event._id)}
-                        className="text-green-600 hover:text-green-900"
-                        title="Share Event"
-                      >
-                        <ShareIcon className="h-5 w-5" />
-                      </button>
-                      <Link
-                        to={`/vendor-dashboard/qr-codes`}
-                        className="text-purple-600 hover:text-purple-900"
-                        title="Generate QR Code"
-                      >
-                        <QrCodeIcon className="h-5 w-5" />
-                      </Link>
-                      <button
-                        onClick={() => handleDeleteEvent(event._id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Delete Event"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    {calculateLiveStatus(event) === 'expired' && (
-                        <button
-                          onClick={() => handleSendAbsentEmails(event._id, event.name)}
-                          className="text-yellow-600 hover:text-yellow-900"
-                          title="Send absent emails to non-attendees"
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {event.startDate ? new Date(event.startDate).toLocaleDateString() : 'Invalid Date'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {event.startTime || 'No time specified'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(liveStatus)}`}>
+                        {liveStatus === 'expired' ? 'Expired' :
+                         liveStatus === 'ongoing' ? 'Ongoing' : 'Upcoming'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {event.attendees ? event.attendees.length : 0} registrations
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-3">
+                        <Link
+                          to={`/vendor-dashboard/events/${event._id}/edit`}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit Event"
                         >
-                          <EnvelopeIcon className="h-5 w-5" />
+                          <PencilIcon className="h-5 w-5" />
+                        </Link>
+                        <button
+                          onClick={() => handleShareEvent(event._id)}
+                          className="text-green-600 hover:text-green-900"
+                          title="Share Event"
+                        >
+                          <ShareIcon className="h-5 w-5" />
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <Link
+                          to={`/vendor-dashboard/qr-codes`}
+                          className="text-purple-600 hover:text-purple-900"
+                          title="Generate QR Code"
+                        >
+                          <QrCodeIcon className="h-5 w-5" />
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteEvent(event._id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete Event"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                        {liveStatus === 'expired' && (
+                          <button
+                            onClick={() => handleSendAbsentEmails(event._id, event.name)}
+                            className="text-yellow-600 hover:text-yellow-900"
+                            title="Send absent emails to non-attendees"
+                          >
+                            <EnvelopeIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredEvents.length === 0 && (
                 <tr>
                   <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
@@ -306,4 +332,4 @@ const VendorEvents = () => {
   );
 };
 
-export default VendorEvents; 
+export default VendorEvents;
