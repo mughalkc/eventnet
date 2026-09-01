@@ -3,7 +3,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const nodemailer = require('nodemailer');
 
 // Shared transporter for the entire application
-let transporter;
+let transporter = null;
 
 /**
  * Initialize email transporter with Gmail
@@ -84,7 +84,6 @@ async function verifyConnection() {
         if (error) {
           console.error('SMTP connection error:', error);
           
-          // More detailed error logging
           if (error.code === 'EAUTH') {
             console.error('Authentication failed. Make sure you are using an App Password, not your regular Google password.');
           } else if (error.code === 'ESOCKET') {
@@ -105,7 +104,7 @@ async function verifyConnection() {
 }
 
 /**
- * Fallback logging function when email sending fails
+ * Fallback logging function when email sending fails completely
  * @param {Object} mailOptions - Email options
  * @returns {Object} Mock response object
  */
@@ -124,39 +123,62 @@ function logEmailFallback(mailOptions) {
 }
 
 /**
- * Send an email with fallback to logging if sending fails
+ * Send an email with Resend first, fallback to Nodemailer (Gmail) for unverified domain/clients, and lastly console fallback.
  * @param {Object} mailOptions - Email options
  * @returns {Promise<Object>} Email sending response
  */
 async function sendEmail(mailOptions) {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: 'EventNet <onboarding@resend.dev>',
-      to: mailOptions.to,
-      subject: mailOptions.subject,
-      html: mailOptions.html
-    });
+  // 1. Try sending via Resend API first
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const fromAddress = 'EventNet <onboarding@resend.dev>';
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        html: mailOptions.html
+      });
 
-    if (error) {
-      throw new Error(error.message);
+      if (error) {
+        console.warn(`Resend restriction: ${error.message}. Switching to Nodemailer (Gmail)...`);
+      } else {
+        console.log(`Email sent successfully via Resend to: ${mailOptions.to}`);
+        return data;
+      }
+    } catch (resendError) {
+      console.warn(`Resend failed: ${resendError.message}. Switching to Nodemailer (Gmail)...`);
+    }
+  }
+
+  // 2. Fallback to Nodemailer (Gmail App Password) for external clients
+  try {
+    if (!transporter) {
+      transporter = initializeTransporter();
     }
 
-    console.log(`Email sent successfully to: ${mailOptions.to}`);
-    return data;
-  } catch (error) {
-    console.warn(`Failed to send email: ${error.message}`);
-    console.log('Using fallback logging method instead');
-    return logEmailFallback(mailOptions);
+    if (transporter) {
+      const nodemailerOptions = {
+        from: mailOptions.from || `"EventNet" <${process.env.EMAIL_USER}>`,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        html: mailOptions.html
+      };
+
+      const info = await transporter.sendMail(nodemailerOptions);
+      console.log(`Email sent successfully via Nodemailer (Gmail) to: ${mailOptions.to}`);
+      return info;
+    }
+  } catch (nodemailerError) {
+    console.warn(`Nodemailer failed: ${nodemailerError.message}`);
   }
+
+  // 3. Fallback to console logging if both fail
+  console.log('Both Resend and Nodemailer failed. Using fallback logging method.');
+  return logEmailFallback(mailOptions);
 }
 
 /**
  * Send a login notification email
- * @param {String} email - User's email address
- * @param {String} name - User's name
- * @param {String} role - User's role
- * @param {Object} loginInfo - Login information
- * @returns {Promise<Object>} Email sending response
  */
 async function sendLoginNotificationEmail(email, name, role, loginInfo = {}) {
   const currentDate = new Date();
@@ -195,9 +217,6 @@ async function sendLoginNotificationEmail(email, name, role, loginInfo = {}) {
 
 /**
  * Send a welcome email to a new user
- * @param {String} email - User's email address
- * @param {String} name - User's name
- * @returns {Promise<Object>} Email sending response
  */
 async function sendWelcomeEmail(email, name) {
   const mailOptions = {
@@ -232,11 +251,6 @@ async function sendWelcomeEmail(email, name) {
 
 /**
  * Send a ticket confirmation email
- * @param {String} email - User's email address
- * @param {String} name - User's name
- * @param {Object} event - Event details
- * @param {Object} ticket - Ticket details
- * @returns {Promise<Object>} Email sending response
  */
 async function sendTicketConfirmationEmail(email, name, event, ticket) {
   const mailOptions = {
@@ -272,11 +286,6 @@ async function sendTicketConfirmationEmail(email, name, event, ticket) {
 
 /**
  * Send a notification to a vendor about a new registration
- * @param {String} vendorEmail - Vendor's email address
- * @param {String} vendorName - Vendor's name
- * @param {Object} event - Event details
- * @param {Object} user - User who registered
- * @returns {Promise<Object>} Email sending response
  */
 async function sendVendorRegistrationNotification(vendorEmail, vendorName, event, user) {
   const mailOptions = {
@@ -311,18 +320,12 @@ async function sendVendorRegistrationNotification(vendorEmail, vendorName, event
 
 /**
  * Send event notification
- * @param {Object} event - Event details
- * @param {String} userId - User ID 
- * @param {String} type - Notification type
- * @param {Object} user - User object (optional, will be fetched if not provided)
  */
 async function sendEventNotification(event, userId, type, user = null) {
   try {
-    // Use pre-fetched user or get user details
     const userData = user || await require('../models/User').findById(userId);
     if (!userData) return;
     
-    // Email notification
     if (type === 'registration') {
       const mailOptions = {
         from: `"EventNet" <${process.env.EMAIL_USER}>`,
@@ -359,9 +362,9 @@ async function sendEventNotification(event, userId, type, user = null) {
   }
 }
 
-// Export functions and the transporter for possible reuse
+// Export functions and a getter function for transporter to ensure updated reference
 module.exports = {
-  transporter,
+  getTransporter: () => transporter,
   init,
   sendWelcomeEmail,
   sendTicketConfirmationEmail,
