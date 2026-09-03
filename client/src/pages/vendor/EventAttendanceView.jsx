@@ -75,8 +75,8 @@ const EventAttendanceView = ({ eventId }) => {
       {/* List */}
       <div className="space-y-2 max-h-60 overflow-y-auto">
         {activeTab === 'present' ? (
-          attendance.presentList.length > 0 ? (
-            attendance.presentList.map((user) => (
+          (attendance?.presentList || attendance?.present || []).length > 0 ? (
+         (attendance?.presentList || attendance?.present || []).map((user) => (
               <div key={user._id} className="flex justify-between items-center p-3 bg-gray-50 rounded border">
                 <div>
                   <p className="font-semibold text-gray-800">{user.name}</p>
@@ -91,8 +91,8 @@ const EventAttendanceView = ({ eventId }) => {
             <p className="text-gray-500 text-sm py-2">No present attendees yet.</p>
           )
         ) : (
-          attendance.absentList.length > 0 ? (
-            attendance.absentList.map((user) => (
+          (attendance?.absentList || attendance?.absent || []).length > 0 ? (
+    (attendance?.absentList || attendance?.absent || []).map((user) => (
               <div key={user._id} className="flex justify-between items-center p-3 bg-gray-50 rounded border">
                 <div>
                   <p className="font-semibold text-gray-800">{user.name}</p>
