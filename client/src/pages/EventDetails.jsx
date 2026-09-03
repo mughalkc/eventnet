@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
 import { QRCodeSVG } from 'qrcode.react'
 
+// Original Heroicons imports kept completely intact without any replacements
 import {
   CalendarIcon,
   MapPinIcon,
@@ -18,18 +19,14 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline'
 
-// Helper function to get correct image URL
+// Helper function to resolve event image URL (handles external links and relative server uploads)
 const getImageUrl = (event) => {
-  // Default placeholder if no event or image
   if (!event || !event.image) return 'https://via.placeholder.com/400x300?text=Event+Image';
   
-  // If it's already a full URL (starts with http or https), use it as is
   if (event.image.startsWith('http://') || event.image.startsWith('https://')) {
     return event.image;
   }
   
-  // Otherwise, prepend the server URL
-  // Remove any leading slash if present and normalize backslashes to forward slashes
   const cleanPath = event.image.replace(/^\//, '').replace(/\\/g, '/');
   return `https://eventnet-production.up.railway.app/${cleanPath}`;
 };
@@ -38,7 +35,8 @@ export default function EventDetails() {
   const { eventId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-  console.log('Current eventId:', eventId)
+  
+  // Component state management for event details, loading status, tabs, modals, and lists
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -48,21 +46,20 @@ export default function EventDetails() {
   const [registrations, setRegistrations] = useState([])
   const [insights, setInsights] = useState(null)
 
+  // Fetch event details on mount or when eventId / search parameters change
   useEffect(() => {
     fetchEventDetails()
     
-    // Check for the updated parameter in the URL which indicates we should refresh
     const queryParams = new URLSearchParams(window.location.search)
     const isUpdated = queryParams.has('updated')
     
     if (isUpdated) {
-      console.log('Detected update parameter, ensuring data is refreshed')
-      // Remove the updated parameter from URL to avoid confusion on page refresh
       const cleanUrl = window.location.pathname
       window.history.replaceState({}, document.title, cleanUrl)
     }
   }, [eventId, window.location.search])
 
+  // Fetch restricted creator/vendor data only if the event is loaded and user is authorized
   useEffect(() => {
     if (event && isCreator) {
       fetchGuests()
@@ -71,7 +68,7 @@ export default function EventDetails() {
     }
   }, [event])
   
-  // Add the keyframes animation to the document
+  // Inject custom CSS keyframe animations for gradient borders into the document head
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -84,21 +81,18 @@ export default function EventDetails() {
     document.head.appendChild(style);
     
     return () => {
-      // Clean up on unmount
       document.head.removeChild(style);
     };
   }, [])
 
+  // API call to fetch full event information from the backend server
   const fetchEventDetails = async () => {
     try {
-      // Add cache-busting query parameter to ensure we get fresh data
       const timestamp = new Date().getTime();
       const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
-          // Removed problematic cache-control headers that were causing CORS issues
         },
-        // Use cache: 'no-store' to prevent using cached responses
         cache: 'no-store'
       })
       
@@ -107,24 +101,15 @@ export default function EventDetails() {
       }
       
       const data = await response.json()
-      console.log('Fetched event data:', data)
-      console.log('Event image property:', data.image)
-      
-      // Check if image needs to be formatted
-      if (data.image) {
-        const formattedImageUrl = getImageUrl({image: data.image})
-        console.log('Formatted image URL:', formattedImageUrl)
-      }
-      
       setEvent(data)
     } catch (error) {
-      console.error('Error fetching event details:', error)
       toast.error('Failed to fetch event details')
     } finally {
       setLoading(false)
     }
   }
 
+  // Fetch list of attendees/guests for the specific event
   const fetchGuests = async () => {
     try {
       const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/guests`, {
@@ -134,7 +119,6 @@ export default function EventDetails() {
       });
       
       if (!response.ok) {
-        // If the event object already has attendees, use that data
         if (event?.attendees) {
           setGuests(event.attendees);
           return;
@@ -145,8 +129,6 @@ export default function EventDetails() {
       const data = await response.json();
       setGuests(data);
     } catch (error) {
-      console.error('Error fetching guests:', error);
-      // If the event object has attendees, use that data as fallback
       if (event?.attendees) {
         setGuests(event.attendees);
       } else {
@@ -155,6 +137,7 @@ export default function EventDetails() {
     }
   };
 
+  // Fetch list of event registrations
   const fetchRegistrations = async () => {
     try {
       const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/registrations`, {
@@ -176,6 +159,7 @@ export default function EventDetails() {
     }
   };
 
+  // Fetch organizer analytics and insights for the event
   const fetchInsights = async () => {
     try {
       const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/insights`, {
@@ -197,6 +181,7 @@ export default function EventDetails() {
     }
   };
 
+  // Handle event deletion (accessible by creators/vendors/admins)
   const handleDelete = async () => {
     try {
       const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
@@ -217,6 +202,7 @@ export default function EventDetails() {
     }
   }
 
+  // Handle user registration for the event
   const handleRegister = async () => {
     if (!user) {
       toast.error('Please login to register for the event');
@@ -236,7 +222,7 @@ export default function EventDetails() {
 
       if (response.ok) {
         toast.success('Successfully registered for the event!')
-        fetchEventDetails() // Refresh event details
+        fetchEventDetails()
       } else {
         throw new Error(data.message || 'Registration failed')
       }
@@ -245,6 +231,7 @@ export default function EventDetails() {
     }
   }
 
+  // Handle cancellation of event registration
   const handleUnregister = async () => {
     if (!user) {
       toast.error('Please login to unregister from the event');
@@ -270,34 +257,33 @@ export default function EventDetails() {
     }
   };
 
-// Contact Vendor
-const handleContactVendor = () => {
-  // User login nahi hai to login page par bhejo
-  if (!user) {
-    toast.error('Please sign in to contact the vendor')
-    navigate('/login')
-    return
+  // Redirect standard users to direct chat/contact page with the event vendor
+  const handleContactVendor = () => {
+    if (!user) {
+      toast.error('Please sign in to contact the vendor')
+      navigate('/login')
+      return
+    }
+
+    if (user.role !== 'user') {
+      toast.error('Only users can contact the vendor')
+      return
+    }
+
+    const vendorId =
+      event.createdBy?._id ||
+      event.createdBy?.id ||
+      event.createdBy
+
+    if (!vendorId) {
+      toast.error('Vendor information is not available')
+      return
+    }
+
+    navigate(`/contact?vendorId=${vendorId}&eventId=${eventId}`)
   }
 
-  if (user.role !== 'user') {
-    toast.error('Only users can contact the vendor')
-    return
-  }
-
-  const vendorId =
-    event.createdBy?._id ||
-    event.createdBy?.id ||
-    event.createdBy
-
-  if (!vendorId) {
-    toast.error('Vendor information is not available')
-    return
-  }
-
-  navigate(`/contact?vendorId=${vendorId}&eventId=${eventId}`)
-}
-
-  // Feature: Self attendance with optional GPS verification
+  // Handle self check-in using browser geolocation verification
   const handleSelfCheckin = async () => {
     if (!user) {
       toast.error('Please login first');
@@ -305,7 +291,6 @@ const handleContactVendor = () => {
       return;
     }
 
-    // Try to get GPS location from browser
     const markAttendance = async (latitude, longitude) => {
       try {
         const body = {}
@@ -338,7 +323,6 @@ const handleContactVendor = () => {
       }
     }
 
-    // Ask browser for GPS location
     if (navigator.geolocation) {
       toast('📍 Getting your location...', { duration: 2000 })
       navigator.geolocation.getCurrentPosition(
@@ -346,17 +330,16 @@ const handleContactVendor = () => {
           markAttendance(position.coords.latitude, position.coords.longitude)
         },
         () => {
-          // User denied GPS or not available — still allow attendance without GPS
           markAttendance(null, null)
         },
         { timeout: 8000 }
       )
     } else {
-      // Browser doesn't support GPS
       markAttendance(null, null)
     }
   }
 
+  // Copy shareable event link to clipboard
   const copyEventLink = () => {
     const eventUrl = `${window.location.origin}/events/${eventId}`
     navigator.clipboard.writeText(eventUrl)
@@ -382,6 +365,7 @@ const handleContactVendor = () => {
     )
   }
 
+  // User permission flags and status checks
   const isCreator = user && (
     (event.createdBy && event.createdBy._id === user.id) || 
     (event.createdBy === user.id) ||
@@ -389,7 +373,6 @@ const handleContactVendor = () => {
     user.role === 'vendor'
   )
   
-  // Check multiple ways a user might be registered since IDs can be in different formats
   const isRegistered = user && event.attendees?.some(attendee => 
     (attendee._id === user.id) || 
     (attendee.userId === user.id) ||
@@ -397,14 +380,11 @@ const handleContactVendor = () => {
     (typeof attendee === 'string' && attendee === user.id)
   );
 
-  // Whether the event has already finished (backend computes this as 'expired')
   const isExpired = event.liveStatus === 'expired'
 
-  // Whether the event has reached its max capacity
   const isFull = event.capacity === 'limited' &&
     (event.attendees?.length || 0) >= event.maxCapacity
 
-  // Whether current user has already checked in
   const isCheckedIn = user && event.checkIns?.some(c => {
     const uid = c.user?._id || c.user
     return uid?.toString() === user.id
@@ -413,6 +393,7 @@ const handleContactVendor = () => {
     return uid?.toString() === user.id
   })?.checkedIn === true
 
+  // Render content dynamically based on selected tab view
   const renderTabContent = () => {
     switch (activeTab) {
       case 'guests':
@@ -491,7 +472,6 @@ const handleContactVendor = () => {
           <div className="bg-white shadow rounded-lg mt-6">
             <div className="p-6">
               <div className="md:flex md:gap-8">
-                {/* Event details on the left */}
                 <div className="md:w-3/5">
                   <div className="flex items-center gap-3 mb-4">
                     <h1 className="text-3xl font-bold text-gray-900">{event.name}</h1>
@@ -539,28 +519,22 @@ const handleContactVendor = () => {
                   </div>
                 </div>
                 
-                {/* Event image on the right */}
                 <div className="md:w-2/5 mt-6 md:mt-0">
-                  {/* Animated border container */}
                   <div className="relative p-1 rounded-lg overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-[length:400%_400%]" style={{animation: 'gradient 3s ease infinite'}}>
                     <div className="relative bg-white rounded-lg overflow-hidden shadow-md h-auto min-h-[300px]">
-                      {/* Loading placeholder */}
                       <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       </div>
                       
-                      {/* Event image with error handling */}
                       <img
                         src={getImageUrl(event)}
                         alt={event.name}
                         className="w-full h-full object-cover absolute inset-0"
                         onLoad={(e) => {
-                          console.log('Image loaded successfully:', e.target.src);
                           e.target.style.position = 'relative';
                           e.target.previousElementSibling.style.display = 'none';
                         }}
                         onError={(e) => {
-                          console.log('Image failed to load:', e.target.src);
                           e.target.onerror = null;
                           e.target.src = 'https://via.placeholder.com/400x300?text=Event+Image';
                         }}
@@ -570,7 +544,6 @@ const handleContactVendor = () => {
                 </div>
               </div>
 
-              {/* Host Information */}
               <div className="mt-8">
                 <h2 className="text-lg font-semibold mb-4">Hosted by</h2>
                 <div className="flex items-center">
@@ -581,7 +554,6 @@ const handleContactVendor = () => {
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
-                        // Use a simple colored div as fallback instead of external placeholder
                         const parent = e.target.parentNode;
                         if (parent) {
                           const initials = event.createdBy?.name?.charAt(0) || 'H';
@@ -600,19 +572,14 @@ const handleContactVendor = () => {
                   </div>
                 </div>
               </div>
-
-
             </div>
           </div>
         )
     }
   }
 
-
-  
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Navigation */}
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -655,7 +622,6 @@ const handleContactVendor = () => {
                     >
                       Registration
                     </button>
-
                   </>
                 )}
               </div>
@@ -683,9 +649,7 @@ const handleContactVendor = () => {
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Action Buttons */}
         <div className="mb-8 flex space-x-4">
           <button
             onClick={() => setShowShareModal(true)}
@@ -695,21 +659,19 @@ const handleContactVendor = () => {
             Share Event
           </button>
 
-          {/* Contact Vendor button */}
-            {user?.role === 'user' && (
+          {user?.role === 'user' && (
             <button
-            onClick={handleContactVendor}
-            className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-white hover:bg-blue-50"
+              onClick={handleContactVendor}
+              className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-white hover:bg-blue-50"
             >
-           <ChatBubbleLeftIcon className="h-5 w-5 mr-2" />
-           Contact Vendor
+              <ChatBubbleLeftIcon className="h-5 w-5 mr-2" />
+              Contact Vendor
             </button>
-            )}
+          )}
 
           {!isCreator && (
             isRegistered ? (
               <div className="flex flex-col gap-2">
-                {/* Attendance button — only during ongoing events */}
                 {event.liveStatus === 'ongoing' && (
                   isCheckedIn ? (
                     <span className="inline-flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium bg-green-100 text-green-700">
@@ -757,10 +719,8 @@ const handleContactVendor = () => {
           )}
         </div>
 
-        {/* Tab Content */}
         {renderTabContent()}
 
-        {/* Share Modal */}
         {showShareModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -776,7 +736,6 @@ const handleContactVendor = () => {
                 </button>
               </div>
 
-              {/* QR Code */}
               <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg">
                 <QRCodeSVG
                   value={`${window.location.origin}/checkin/${eventId}`}
@@ -802,7 +761,6 @@ const handleContactVendor = () => {
                 </button>
               </div>
 
-              {/* Share Options */}
               <div className="space-y-4">
                 <button
                   onClick={copyEventLink}
@@ -819,7 +777,6 @@ const handleContactVendor = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         {showDeleteModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 max-w-sm w-full">
@@ -827,19 +784,16 @@ const handleContactVendor = () => {
               <p className="text-gray-600 mb-6">
                 Are you sure you want to delete this event? This action cannot be undone.
               </p>
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    handleDelete()
-                    setShowDeleteModal(false)
-                  }}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  onClick={handleDelete}
+                  className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
                 >
                   Delete
                 </button>

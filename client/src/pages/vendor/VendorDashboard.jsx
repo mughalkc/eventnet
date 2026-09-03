@@ -12,6 +12,7 @@ import {
   EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
+
 const VendorDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({
@@ -27,7 +28,7 @@ const VendorDashboard = () => {
   const [showRegistrationsModal, setShowRegistrationsModal] = useState(false);
   const [registrations, setRegistrations] = useState([]);
 
-useEffect(() => {
+  useEffect(() => {
     fetchDashboardData();
   }, []);
 
@@ -409,63 +410,48 @@ useEffect(() => {
           <h2 className="text-lg font-semibold text-gray-900">Recent Events</h2>
         </div>
         <div className="divide-y divide-gray-200">
-          {recentEvents.map((event) => (
-            <div key={event._id} className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900">
-                    {event.title || event.name}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {new Date(event.date || event.startDate).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Registered: {event.attendees ? event.attendees.length : 0}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                 
-              {/*    <span className={`px-2 py-1 text-xs rounded-full ${
-                    event.status === 'active'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {event.status}
-                  </span>
-              */}
-              <span className={`px-2 py-1 text-xs rounded-full ${
-  (() => {
-    const now = new Date();
-    const end = new Date(event.endDate);
-    const start = new Date(event.startDate);
-    if (event.endTime) { const [h,m] = event.endTime.split(':'); end.setHours(+h,+m); }
-    if (event.startTime) { const [h,m] = event.startTime.split(':'); start.setHours(+h,+m); }
-    if (now > end) return 'bg-gray-200 text-gray-700';
-    if (now >= start) return 'bg-green-100 text-green-800';
-    return 'bg-blue-100 text-blue-800';
-  })()
-}`}>
-  {(() => {
-    const now = new Date();
-    const end = new Date(event.endDate);
-    const start = new Date(event.startDate);
-    if (event.endTime) { const [h,m] = event.endTime.split(':'); end.setHours(+h,+m); }
-    if (event.startTime) { const [h,m] = event.startTime.split(':'); start.setHours(+h,+m); }
-    if (now > end) return 'Expired';
-    if (now >= start) return 'Ongoing';
-    return 'Upcoming';
-  })()}
-</span>
-                  <Link
-                    to={`/vendor-dashboard/events/${event._id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    View Details
-                  </Link>
+          {recentEvents.map((event) => {
+            const now = new Date();
+            const start = new Date(event.startDate || event.date);
+            const end = new Date(event.endDate || event.date);
+            if (event.startTime) { const [h, m] = event.startTime.split(':'); start.setHours(+h, +m); }
+            if (event.endTime) { const [h, m] = event.endTime.split(':'); end.setHours(+h, +m); }
+
+            const isExpired = now > end;
+            const isOngoing = now >= start && now <= end;
+
+            const badgeBg = isExpired ? 'bg-gray-200 text-gray-700' : isOngoing ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+            const badgeText = isExpired ? 'Expired' : isOngoing ? 'Ongoing' : 'Upcoming';
+
+            return (
+              <div key={event._id} className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">
+                      {event.title || event.name}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {new Date(event.date || event.startDate).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Registered: {event.attendees ? event.attendees.length : 0}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 text-xs rounded-full ${badgeBg}`}>
+                      {badgeText}
+                    </span>
+                    <Link
+                      to={`/vendor-dashboard/events/${event._id}`}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {recentEvents.length === 0 && (
             <div className="px-6 py-4 text-center text-gray-500">
               No events found. Create your first event!
@@ -505,4 +491,4 @@ useEffect(() => {
   );
 };
 
-export default VendorDashboard; 
+export default VendorDashboard;

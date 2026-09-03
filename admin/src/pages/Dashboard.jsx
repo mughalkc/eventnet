@@ -91,15 +91,31 @@ const Dashboard = () => {
     try {
       // Fetch basic dashboard stats
       const statsResponse = await axios.get('https://eventnet-production.up.railway.app/api/admin/dashboard-stats')
-      setStats(statsResponse.data)
       
       // Fetch events for distribution data
       const eventsResponse = await axios.get('https://eventnet-production.up.railway.app/api/admin/events')
-      const events = eventsResponse.data
+      const events = eventsResponse.data || []
+
+      // Calculate active events dynamically
+      const now = new Date();
+      const activeEventsCount = events.filter(event => {
+        const end = new Date(event.endDate || event.startDate || event.date);
+        if (event.endTime) {
+          const [h, m] = event.endTime.split(':');
+          end.setHours(+h, +m);
+        }
+        return now <= end;
+      }).length;
+
+      // Update state after calculating activeEventsCount
+      setStats({
+        ...statsResponse.data,
+        activeEvents: activeEventsCount
+      });
       
       // Fetch users for user activity
       const usersResponse = await axios.get('https://eventnet-production.up.railway.app/api/admin/users')
-      const users = usersResponse.data
+      const users = usersResponse.data || []
 
       // Process monthly revenue data
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -114,7 +130,7 @@ const Dashboard = () => {
         
         // Filter events by month and sum revenue
         const monthEvents = events.filter(event => {
-          const eventDate = new Date(event.startDate)
+          const eventDate = new Date(event.startDate || event.date)
           return eventDate.getMonth() === month.getMonth() && eventDate.getFullYear() === month.getFullYear()
         })
         
@@ -185,7 +201,6 @@ const Dashboard = () => {
     navigate('/login')
   }
 
-  // In a real app, these would come from an API
   const statsData = [
     { title: 'Total Users', value: stats.totalUsers, icon: UsersIcon },
     { title: 'Pending Vendors', value: stats.pendingVendors, icon: UsersIcon },
@@ -241,7 +256,7 @@ const Dashboard = () => {
                   <div className="flow-root">
                     <ul className="-mb-8">
                       {recentActivities.map((activity, activityIdx) => (
-                        <li key={activity.id}>
+                        <li key={activity.id || activityIdx}>
                           <div className="relative pb-8">
                             {activityIdx !== recentActivities.length - 1 ? (
                               <span
@@ -271,20 +286,19 @@ const Dashboard = () => {
                               <div className="min-w-0 flex-1">
                                 <div>
                                   <div className="text-sm">
-                                    <a href="#" className="font-medium text-gray-900">
+                                    <span className="font-medium text-gray-900">
                                       {activity.user}
-                                    </a>
+                                    </span>
                                   </div>
                                   <p className="mt-0.5 text-sm text-gray-500">
                                     {activity.timestamp.toLocaleString()}
                                   </p>
                                 </div>
                                 <div className="mt-2 text-sm text-gray-700">
-                                  {/* Show detail text based on activity type */}
                                   {activity.type === 'user_registration' && (
                                     <p>Registered a new account with email {activity.email}</p>
                                   )}
-                                  {activity.type.startsWith('vendor_') && (
+                                  {activity.type?.startsWith('vendor_') && (
                                     <p>{activity.details || `Vendor ${activity.type.replace('vendor_', '')}: ${activity.email}`}</p>
                                   )}
                                   {activity.type === 'new_event' && (
@@ -294,7 +308,7 @@ const Dashboard = () => {
                                     <p>{activity.details || `Made a payment of $${activity.amount} for ${activity.eventName}`}</p>
                                   )}
                                   {!['user_registration', 'new_event', 'payment'].includes(activity.type) && 
-                                   !activity.type.startsWith('vendor_') && activity.details && (
+                                   !activity.type?.startsWith('vendor_') && activity.details && (
                                     <p>{activity.details}</p>
                                   )}
                                 </div>
@@ -405,4 +419,4 @@ const Dashboard = () => {
   )
 }
 
-export default Dashboard 
+export default Dashboard
