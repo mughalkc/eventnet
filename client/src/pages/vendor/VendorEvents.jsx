@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import EventAttendanceView from './EventAttendanceView';
 import {
   PencilIcon,
   TrashIcon,
   QrCodeIcon,
   ShareIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 
 const VendorEvents = () => {
@@ -15,6 +17,7 @@ const VendorEvents = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const { user } = useAuth();
+  const [selectedAttendanceEventId, setSelectedAttendanceEventId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -273,6 +276,15 @@ const VendorEvents = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-3">
+                        <button
+                            onClick={() => setSelectedAttendanceEventId(
+                              selectedAttendanceEventId === event._id ? null : event._id
+                            )}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="View Present/Absent Attendance"
+                          >
+                            <UserGroupIcon className="h-5 w-5" />
+                          </button>
                         <Link
                           to={`/vendor-dashboard/events/${event._id}/edit`}
                           className="text-blue-600 hover:text-blue-900"
@@ -328,6 +340,23 @@ const VendorEvents = () => {
           </table>
         </div>
       </div>
+      {/* Attendance Component Section */}
+      {selectedAttendanceEventId && (
+        <div className="mt-8 border-t-2 border-indigo-500 pt-4 bg-white p-4 rounded-lg shadow">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-lg font-bold text-gray-800">
+              Event Attendance Breakdown
+            </h2>
+            <button 
+              onClick={() => setSelectedAttendanceEventId(null)}
+              className="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-gray-700"
+            >
+              Close ✖
+            </button>
+          </div>
+          <EventAttendanceView eventId={selectedAttendanceEventId} />
+        </div>
+      )}
     </div>
   );
 };

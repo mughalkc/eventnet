@@ -24,6 +24,7 @@ const parseTime = (timeStr, defaultH, defaultM) => {
 };
 
 // Admin dashboard statistics
+// Admin dashboard statistics
 router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
@@ -35,27 +36,38 @@ router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
     });
     
     const now = new Date();
+
     const allEvents = await Event.find({
       status: { $nin: ['draft', 'cancelled', 'completed'] }
     }).lean();
 
+    // ✅ EXACT ACTIVE / ONGOING EVENTS LOGIC
     const activeEvents = allEvents.filter(event => {
       if (!event.startDate) return false;
 
+      // 1. Event Start Date & Time exact calculate
       const start = new Date(event.startDate);
       const [startH, startM] = parseTime(event.startTime, 0, 0);
       start.setHours(startH, startM, 0, 0);
 
+      // 2. Event End Date & Time exact calculate
       const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
-      let [endH, endM] = parseTime(event.endTime, startH + 2, startM);
-      end.setHours(endH, endM, 59, 999);
+      
+      // Agar endTime di hui hai toh wo time lein, warna poora din (23:59:59) lein
+      if (event.endTime) {
+        const [endH, endM] = parseTime(event.endTime, 23, 59);
+        end.setHours(endH, endM, 59, 999);
+      } else {
+        end.setHours(23, 59, 59, 999);
+      }
 
+      // 3. Shart: Waqt shuru ho chuka ho (now >= start) AND Khatam na hua ho (now <= end)
       return now >= start && now <= end;
     }).length;
 
-        const Revenue = require('../models/Revenue');
-        let totalRevenue = 0;
-        const revenueAgg = await Revenue.aggregate([
+    const Revenue = require('../models/Revenue');
+    let totalRevenue = 0;
+    const revenueAgg = await Revenue.aggregate([
       { $match: { status: { $ne: 'refunded' } } },
       { $group: { _id: null, total: { $sum: '$netAmount' } } }
     ]);

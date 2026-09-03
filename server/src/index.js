@@ -6,6 +6,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const cron = require('node-cron');
+
+// Import models for Cron Job
+const Event = require('./models/Event');
+const Ticket = require('./models/Ticket');
+
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -77,6 +83,70 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api', revenueRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+
+// Helper function for time parsing in Cron Job
+const parseTimeForCron = (timeStr, defaultH, defaultM) => {
+  if (!timeStr) return [defaultH, defaultM];
+  const match = String(timeStr).match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (!match) return [defaultH, defaultM];
+  let h = parseInt(match[1], 10);
+  let m = parseInt(match[2], 10);
+  if (match[3]) {
+    if (match[3].toUpperCase() === 'PM' && h < 12) h += 12;
+    if (match[3].toUpperCase() === 'AM' && h === 12) h = 0;
+  }
+  return [h, m];
+};
+
+// AUTOMATED CRON JOB: Runs every 15 minutes to mark ABSENT & send emails
+cron.schedule('*/15 * * * *', async () => {
+  try {
+    const now = new Date();
+    const events = await Event.find({ status: { $ne: 'cancelled' } }).lean();
+
+    for (const event of events) {
+      if (!event.startDate) continue;
+
+      const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+      const [endH, endM] = parseTimeForCron(event.endTime, 23, 59);
+      end.setHours(endH, endM, 59, 999);
+
+      // Agar event expire ho chuka ho
+      if (now > end) {
+        const unverifiedTickets = await Ticket.find({
+          event: event._id,
+          attendanceStatus: { $ne: 'attended' }
+        }).populate('user');
+
+        for (const ticket of unverifiedTickets) {
+          if (ticket.attendanceStatus !== 'absent') {
+            ticket.attendanceStatus = 'absent';
+            await ticket.save();
+
+            if (ticket.user && ticket.user.email) {
+              const emailSubject = `Missed Event Notice: ${event.name}`;
+              const emailHtml = `
+                <h3>Hello ${ticket.user.name},</h3>
+                <p>We noticed that you were unable to attend <b>${event.name}</b> which took place recently.</p>
+                <p>Your attendance status has been updated to: <b>ABSENT</b>.</p>
+                <p>We hope to see you at our future events!</p>
+                <br/>
+                <p>Best regards,<br/>EventNet Team</p>
+              `;
+
+              if (emailService.sendEmail) {
+                await emailService.sendEmail(ticket.user.email, emailSubject, emailHtml);
+              }
+              console.log(`Absent email sent to ${ticket.user.email} for event ${event.name}`);
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error running expired attendance cron job:', error);
+  }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

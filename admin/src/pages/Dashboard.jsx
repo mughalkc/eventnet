@@ -205,7 +205,7 @@ const Dashboard = () => {
             <span className="text-gray-700">Welcome, {user?.name}</span>
             <button
               onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900"
+              className="bg-gray-900 text-white font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition"
             >
               Logout
             </button>

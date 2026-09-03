@@ -348,6 +348,7 @@ router.get('/events/:id/attendance', verifyToken, verifyVendor, async (req, res)
 });
 
 // Get dashboard stats for a vendor
+// Get dashboard stats for a vendor
 router.get('/stats', verifyToken, verifyVendor, async (req, res) => {
   try {
     const vendorId = req.user.id;
@@ -360,9 +361,11 @@ router.get('/stats', verifyToken, verifyVendor, async (req, res) => {
       ]
     });
 
+   //fiXED ACTIVE EVENTS LOGIC
+   
     const activeEvents = events.filter(event => {
       const status = getLiveStatus(event);
-      return status === 'ongoing' || status === 'upcoming';
+      return status === 'ongoing';
     }).length;
 
     const totalRegistrations = events.reduce(
