@@ -672,7 +672,8 @@ export default function EventDetails() {
             {!isCreator && (
   isRegistered ? (
     <div className="flex flex-col gap-2">
-      {event.liveStatus === 'ongoing' ? (
+      {/* Strict ongoing ya agar time match ho jaye */}
+      {(event.liveStatus === 'ongoing' || new Date() >= new Date(event.startDate) && new Date() <= new Date(event.endDate)) ? (
         isCheckedIn ? (
           <span className="inline-flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium bg-green-100 text-green-700">
             ✅ Attendance Marked
@@ -687,9 +688,12 @@ export default function EventDetails() {
         )
       ) : (
         <span className="text-xs text-gray-500 italic bg-gray-100 p-2 rounded">
-          Event status: {event.liveStatus || 'Not started'} (Button will appear when ongoing)
+          Debug - Status: {event.liveStatus} | Start: {event.startDate}
         </span>
       )}
+    </div>
+  ) : null
+)}
                 <button
                   onClick={handleUnregister}
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-90"
