@@ -669,11 +669,11 @@ export default function EventDetails() {
             </button>
           )}
 
-            {!isCreator && (
+          {!isCreator && (
   isRegistered ? (
     <div className="flex flex-col gap-2">
-      {/* Strict ongoing ya agar time match ho jaye */}
-      {(event.liveStatus === 'ongoing' || new Date() >= new Date(event.startDate) && new Date() <= new Date(event.endDate)) ? (
+      {/* Backend se liveStatus ya status kuch bhi aaye, yahan check ho jaye ga */}
+      {(event.liveStatus === 'ongoing' || event.status === 'ongoing' || event.liveStatus === 'active') ? (
         isCheckedIn ? (
           <span className="inline-flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium bg-green-100 text-green-700">
             ✅ Attendance Marked
@@ -687,8 +687,8 @@ export default function EventDetails() {
           </button>
         )
       ) : (
-        <span className="text-xs text-gray-500 italic bg-gray-100 p-2 rounded">
-          Debug - Status: {event.liveStatus} | Start: {event.startDate}
+        <span className="text-xs text-red-500 bg-red-50 p-2 rounded border border-red-200">
+          Backend Status Received: <b>{String(event.liveStatus || event.status || 'undefined')}</b>
         </span>
       )}
     </div>
