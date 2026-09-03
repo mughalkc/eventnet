@@ -669,23 +669,27 @@ export default function EventDetails() {
             </button>
           )}
 
-          {!isCreator && (
-            isRegistered ? (
-              <div className="flex flex-col gap-2">
-                {event.liveStatus === 'ongoing' && (
-                  isCheckedIn ? (
-                    <span className="inline-flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium bg-green-100 text-green-700">
-                      ✅ Attendance Marked
-                    </span>
-                  ) : (
-                    <button
-                      onClick={handleSelfCheckin}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90"
-                    >
-                      📍 Mark My Attendance
-                    </button>
-                  )
-                )}
+            {!isCreator && (
+  isRegistered ? (
+    <div className="flex flex-col gap-2">
+      {event.liveStatus === 'ongoing' ? (
+        isCheckedIn ? (
+          <span className="inline-flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium bg-green-100 text-green-700">
+            ✅ Attendance Marked
+          </span>
+        ) : (
+          <button
+            onClick={handleSelfCheckin}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90 shadow-md"
+          >
+            📍 Mark My Attendance
+          </button>
+        )
+      ) : (
+        <span className="text-xs text-gray-500 italic bg-gray-100 p-2 rounded">
+          Event status: {event.liveStatus || 'Not started'} (Button will appear when ongoing)
+        </span>
+      )}
                 <button
                   onClick={handleUnregister}
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-90"
