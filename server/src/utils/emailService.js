@@ -1,5 +1,5 @@
 const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const nodemailer = require('nodemailer');
 
 // Shared transporter for the entire application
@@ -12,7 +12,7 @@ let transporter = null;
 function initializeTransporter() {
   try {
     console.log('Initializing email transporter...');
-    
+
     // Validate credentials
     if (!process.env.EMAIL_USER) {
       throw new Error('EMAIL_USER environment variable not set');
@@ -20,7 +20,7 @@ function initializeTransporter() {
     if (!process.env.EMAIL_PASSWORD) {
       throw new Error('EMAIL_PASSWORD environment variable not set');
     }
-    
+
     // Create a transporter with simple auth
     const newTransporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -33,7 +33,7 @@ function initializeTransporter() {
       },
       connectionTimeout: 10000
     });
-    
+
     return newTransporter;
   } catch (error) {
     console.error('Failed to create email transporter:', error);
@@ -47,20 +47,18 @@ function initializeTransporter() {
  */
 async function init() {
   try {
-    // Initialize transporter if not already done
     if (!transporter) {
       transporter = initializeTransporter();
     }
-    
-    // Verify the connection
+
     const isConnected = await verifyConnection();
-    
+
     if (isConnected) {
       console.log('Email service initialized successfully');
     } else {
       console.log('Email service initialization failed, will use fallback logging');
     }
-    
+
     return isConnected;
   } catch (error) {
     console.error('Error during email service initialization:', error);
@@ -78,18 +76,18 @@ async function verifyConnection() {
       console.log('Email transporter not initialized');
       return false;
     }
-    
+
     return new Promise((resolve) => {
       transporter.verify((error, success) => {
         if (error) {
           console.error('SMTP connection error:', error);
-          
+
           if (error.code === 'EAUTH') {
             console.error('Authentication failed. Make sure you are using an App Password, not your regular Google password.');
           } else if (error.code === 'ESOCKET') {
             console.error('Socket connection error. Check network connectivity.');
           }
-          
+
           resolve(false);
         } else {
           console.log('Gmail SMTP server is ready to take our messages');
@@ -105,31 +103,29 @@ async function verifyConnection() {
 
 /**
  * Fallback logging function when email sending fails completely
- * @param {Object} mailOptions - Email options
- * @returns {Object} Mock response object
  */
 function logEmailFallback(mailOptions) {
-  console.log('========== EMAIL FALLBACK (NOT SENT) ==========');
-  console.log(`From: ${mailOptions.from}`);
-  console.log(`To: ${mailOptions.to}`);
-  console.log(`Subject: ${mailOptions.subject}`);
-  console.log('HTML Content: [Email HTML content not shown for brevity]');
-  console.log('================================================');
-  
+  console.error(`\n==================================================`);
+  console.error(`[NOTIFICATION / ALERT]: Email send nahi ho saki!`);
+  console.error(`To: ${mailOptions.to}`);
+  console.error(`Subject: ${mailOptions.subject}`);
+  console.error(`Reason: Resend aur Nodemailer dono failed rahe.`);
+  console.error(`==================================================\n`);
+
   return {
+    success: false,
+    fallbackUsed: true,
     messageId: 'fallback-' + Date.now(),
-    response: 'Email logged (not sent)'
+    response: 'Email failed to send. Logged to console.'
   };
 }
 
 /**
- * Send an email with Resend first, fallback to Nodemailer (Gmail) for unverified domain/clients, and lastly console fallback.
- * @param {Object} mailOptions - Email options
- * @returns {Promise<Object>} Email sending response
+ * Send an email with Resend first, fallback to Nodemailer (Gmail), and lastly console fallback.
  */
 async function sendEmail(mailOptions) {
   // 1. Try sending via Resend API first
-  if (process.env.RESEND_API_KEY) {
+  if (process.env.RESEND_API_KEY && resend) {
     try {
       const fromAddress = 'EventNet <onboarding@resend.dev>';
       const { data, error } = await resend.emails.send({
@@ -143,14 +139,14 @@ async function sendEmail(mailOptions) {
         console.warn(`Resend restriction: ${error.message}. Switching to Nodemailer (Gmail)...`);
       } else {
         console.log(`Email sent successfully via Resend to: ${mailOptions.to}`);
-        return data;
+        return { success: true, provider: 'resend', data };
       }
     } catch (resendError) {
       console.warn(`Resend failed: ${resendError.message}. Switching to Nodemailer (Gmail)...`);
     }
   }
 
-  // 2. Fallback to Nodemailer (Gmail App Password) for external clients
+  // 2. Fallback to Nodemailer (Gmail)
   try {
     if (!transporter) {
       transporter = initializeTransporter();
@@ -166,14 +162,13 @@ async function sendEmail(mailOptions) {
 
       const info = await transporter.sendMail(nodemailerOptions);
       console.log(`Email sent successfully via Nodemailer (Gmail) to: ${mailOptions.to}`);
-      return info;
+      return { success: true, provider: 'nodemailer', info };
     }
   } catch (nodemailerError) {
     console.warn(`Nodemailer failed: ${nodemailerError.message}`);
   }
 
-  // 3. Fallback to console logging if both fail
-  console.log('Both Resend and Nodemailer failed. Using fallback logging method.');
+  // 3. Fallback to notification / alert logging
   return logEmailFallback(mailOptions);
 }
 
@@ -183,7 +178,7 @@ async function sendEmail(mailOptions) {
 async function sendLoginNotificationEmail(email, name, role, loginInfo = {}) {
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleString();
-  
+
   const mailOptions = {
     from: `"EventNet Security" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -325,7 +320,7 @@ async function sendEventNotification(event, userId, type, user = null) {
   try {
     const userData = user || await require('../models/User').findById(userId);
     if (!userData) return;
-    
+
     if (type === 'registration') {
       const mailOptions = {
         from: `"EventNet" <${process.env.EMAIL_USER}>`,
@@ -353,9 +348,14 @@ async function sendEventNotification(event, userId, type, user = null) {
           </div>
         `
       };
-      
+
       return sendEmail(mailOptions);
     }
+  } catch (error) {
+    console.error('Send notification error:', error);
+    return { success: false, error: 'Failed to send event notification' };
+  }
+}
 
 /**
  * Send missed event / absent notification email
@@ -389,13 +389,7 @@ async function sendAbsentNotificationEmail(email, name, event) {
   return sendEmail(mailOptions);
 }
 
-  } catch (error) {
-    console.error('Send notification error:', error);
-    return { error: 'Failed to send event notification' };
-  }
-}
-
-// Export functions and a getter function for transporter to ensure updated reference
+// Export functions
 module.exports = {
   getTransporter: () => transporter,
   init,
@@ -404,6 +398,7 @@ module.exports = {
   sendVendorRegistrationNotification,
   sendLoginNotificationEmail,
   sendEventNotification,
+  sendAbsentNotificationEmail,
   verifyConnection,
   sendEmail
 };
