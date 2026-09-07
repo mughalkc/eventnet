@@ -669,7 +669,7 @@ export default function EventDetails() {
             </button>
           )}
 
-          {!isCreator && (
+{!isCreator && (
   isRegistered ? (
     <div className="flex flex-col gap-2">
       {/* Backend se liveStatus ya status kuch bhi aaye, yahan check ho jaye ga */}
