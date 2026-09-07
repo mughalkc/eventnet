@@ -672,25 +672,36 @@ export default function EventDetails() {
 {!isCreator && (
   isRegistered ? (
     <div className="flex flex-col gap-2">
-      {/* Backend se liveStatus ya status kuch bhi aaye, yahan check ho jaye ga */}
-      {(event.liveStatus === 'ongoing' || event.status === 'ongoing' || event.liveStatus === 'active') ? (
-        isCheckedIn ? (
-          <span className="inline-flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium bg-green-100 text-green-700">
-            ✅ Attendance Marked
-          </span>
-        ) : (
-          <button
-            onClick={handleSelfCheckin}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90 shadow-md"
-          >
-            📍 Mark My Attendance
-          </button>
-        )
-      ) : (
-        <span className="text-xs text-red-500 bg-red-50 p-2 rounded border border-red-200">
-          Backend Status Received: <b>{String(event.liveStatus || event.status || 'undefined')}</b>
-        </span>
-      )}
+      {(() => {
+        // Smart client-side time check (Backend timezone mismatch fix)
+        const now = new Date();
+        const start = new Date(event.startDate);
+        const end = new Date(event.endDate);
+        
+        // Agar backend ongoing keh raha hai YA client ka current waqt event start aur end ke beech mein hai
+        const isActuallyOngoing = event.liveStatus === 'ongoing' || (now >= start && now <= end);
+
+        if (isActuallyOngoing) {
+          return isCheckedIn ? (
+            <span className="inline-flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium bg-green-100 text-green-700">
+              ✅ Attendance Marked
+            </span>
+          ) : (
+            <button
+              onClick={handleSelfCheckin}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90 shadow-md"
+            >
+              📍 Mark My Attendance
+            </button>
+          );
+        } else {
+          return (
+            <span className="text-xs text-gray-500 italic bg-gray-100 p-2 rounded">
+              Event status: {event.liveStatus || 'Not started'} (Button will appear when ongoing)
+            </span>
+          );
+        }
+      })()}
     </div>
   ) : null
 )}
