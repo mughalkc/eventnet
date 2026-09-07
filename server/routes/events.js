@@ -6,17 +6,31 @@ const User = require('../src/models/User')
 
 // Helper: figure out if an event is upcoming, ongoing, or expired
 // based on its startDate/endDate (and startTime/endTime if present)
+
 function getLiveStatus(event) {
   const now = new Date()
 
-  // Combine date + time into real Date objects for accurate comparison
-  const start = new Date(event.startDate)
-  const end = new Date(event.endDate)
+  // Extract year, month, day from event.startDate
+  const rawStartDate = new Date(event.startDate)
+  const rawEndDate = new Date(event.endDate)
+
+  const start = new Date(
+    rawStartDate.getUTCFullYear(),
+    rawStartDate.getUTCMonth(),
+    rawStartDate.getUTCDate()
+  )
+
+  const end = new Date(
+    rawEndDate.getUTCFullYear(),
+    rawEndDate.getUTCMonth(),
+    rawEndDate.getUTCDate()
+  )
 
   if (event.startTime) {
     const [sh, sm] = event.startTime.split(':')
     start.setHours(parseInt(sh) || 0, parseInt(sm) || 0, 0, 0)
   }
+
   if (event.endTime) {
     const [eh, em] = event.endTime.split(':')
     end.setHours(parseInt(eh) || 23, parseInt(em) || 59, 0, 0)
