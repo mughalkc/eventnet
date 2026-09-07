@@ -6,41 +6,29 @@ const User = require('../src/models/User')
 
 // Helper: figure out if an event is upcoming, ongoing, or expired
 // based on its startDate/endDate (and startTime/endTime if present)
-
 function getLiveStatus(event) {
-  const now = new Date()
+  const now = new Date();
 
-  // Extract year, month, day from event.startDate
-  const rawStartDate = new Date(event.startDate)
-  const rawEndDate = new Date(event.endDate)
+  if (!event.startDate || !event.endDate) return 'upcoming';
 
-  const start = new Date(
-    rawStartDate.getUTCFullYear(),
-    rawStartDate.getUTCMonth(),
-    rawStartDate.getUTCDate()
-  )
-
-  const end = new Date(
-    rawEndDate.getUTCFullYear(),
-    rawEndDate.getUTCMonth(),
-    rawEndDate.getUTCDate()
-  )
+  const startDate = new Date(event.startDate);
+  const endDate = new Date(event.endDate);
 
   if (event.startTime) {
-    const [sh, sm] = event.startTime.split(':')
-    start.setHours(parseInt(sh) || 0, parseInt(sm) || 0, 0, 0)
+    const [sh, sm] = event.startTime.split(':');
+    startDate.setHours(parseInt(sh, 10) || 0, parseInt(sm, 10) || 0, 0, 0);
   }
 
   if (event.endTime) {
-    const [eh, em] = event.endTime.split(':')
-    end.setHours(parseInt(eh) || 23, parseInt(em) || 59, 0, 0)
+    const [eh, em] = event.endTime.split(':');
+    endDate.setHours(parseInt(eh, 10) || 23, parseInt(em, 10) || 59, 0, 0);
   } else {
-    end.setHours(23, 59, 59, 999)
+    endDate.setHours(23, 59, 59, 999);
   }
-
-  if (now > end) return 'expired'
-  if (now >= start && now <= end) return 'ongoing'
-  return 'upcoming'
+  
+  if (now > endDate) return 'expired';
+  if (now >= startDate && now <= endDate) return 'ongoing';
+  return 'upcoming';
 }
 
 // Helper: attach liveStatus to an event document (works for arrays or single doc)
