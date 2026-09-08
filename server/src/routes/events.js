@@ -372,6 +372,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 })
 
 // Delete event
+// Delete event
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
@@ -380,15 +381,26 @@ router.delete('/:id', verifyToken, async (req, res) => {
       return res.status(404).json({ message: 'Event not found' })
     }
 
-    if (event.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to delete this event' })
+    const eventCreator = event.createdBy.toString()
+    const currentUser = (req.user.id || req.user._id).toString()
+
+    if (eventCreator !== currentUser) {
+      return res.status(403).json({
+        message: 'Not authorized to delete this event'
+      })
     }
 
     await Event.findByIdAndDelete(req.params.id)
-    res.json({ message: 'Event deleted successfully' })
+
+    res.json({
+      message: 'Event deleted successfully'
+    })
   } catch (error) {
     console.error('Delete event error:', error)
-    res.status(500).json({ message: 'Failed to delete event' })
+    res.status(500).json({
+      message: 'Failed to delete event',
+      error: error.message
+    })
   }
 })
 
