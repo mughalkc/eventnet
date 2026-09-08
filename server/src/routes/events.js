@@ -384,7 +384,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this event' })
     }
 
-    await event.remove()
+    await Event.findByIdAndDelete(req.params.id)
     res.json({ message: 'Event deleted successfully' })
   } catch (error) {
     console.error('Delete event error:', error)
