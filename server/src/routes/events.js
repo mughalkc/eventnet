@@ -313,6 +313,7 @@ router.get('/vendor', verifyToken, async (req, res) => {
 });
 
 // Get single event - This must come AFTER all other GET routes with specific paths
+
 router.get('/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
@@ -323,17 +324,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Event not found' })
     }
 
-    const liveStatus = getLiveStatus(event)
-
-      if (liveStatus !== 'ongoing') {
-        return res.status(400).json({
-          message: liveStatus === 'upcoming'
-            ? 'Attendance is not available yet. The event has not started.'
-            : 'Attendance is closed. The event has ended.'
-        })
-      }
-
-        res.json({
+    res.json({
       ...event.toObject(),
       liveStatus: getLiveStatus(event)
     })
