@@ -323,7 +323,20 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Event not found' })
     }
 
-    res.json(event)
+    const liveStatus = getLiveStatus(event)
+
+      if (liveStatus !== 'ongoing') {
+        return res.status(400).json({
+          message: liveStatus === 'upcoming'
+            ? 'Attendance is not available yet. The event has not started.'
+            : 'Attendance is closed. The event has ended.'
+        })
+      }
+
+        res.json({
+      ...event.toObject(),
+      liveStatus: getLiveStatus(event)
+    })
   } catch (error) {
     console.error('Get event error:', error)
     res.status(500).json({ message: 'Failed to fetch event' })
