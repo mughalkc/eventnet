@@ -702,9 +702,6 @@ export default function EventDetails() {
           );
         }
       })()}
-    </div>
-  ) : null
-)}
                 <button
                   onClick={handleUnregister}
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-red-500 to-pink-500 hover:opacity-90"

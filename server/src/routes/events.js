@@ -10,23 +10,48 @@ const router = express.Router()
 // Helper: compute live status from event dates safely
 function getLiveStatus(event) {
   const now = new Date();
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate);
 
-  if (event.startTime) {
-    const [sh, sm] = event.startTime.split(':');
-    start.setHours(parseInt(sh) || 0, parseInt(sm) || 0, 0, 0);
-  }
-  if (event.endTime) {
-    const [eh, em] = event.endTime.split(':');
-    end.setHours(parseInt(eh) || 23, parseInt(em) || 59, 0, 0);
-  } else {
-    end.setHours(23, 59, 59, 999);
-  }
+  const makePakistanDateTime = (dateValue, timeValue, isEnd = false) => {
+    const d = new Date(dateValue);
 
-  if (now.getTime() > end.getTime()) return 'expired';
-  if (now.getTime() >= start.getTime() && now.getTime() <= end.getTime()) return 'ongoing';
-  return 'upcoming';
+    const year = d.getUTCFullYear();
+    const month = d.getUTCMonth();
+    const day = d.getUTCDate();
+
+    let hours = 0;
+    let minutes = 0;
+
+    if (timeValue) {
+      const parts = timeValue.split(':');
+      hours = Number(parts[0]) || 0;
+      minutes = Number(parts[1]) || 0;
+    } else if (isEnd) {
+      hours = 23;
+      minutes = 59;
+    }
+
+    // Pakistan Standard Time = UTC+5
+    return new Date(
+      Date.UTC(year, month, day, hours, minutes, isEnd ? 59 : 0, isEnd ? 999 : 0) - (5 * 60 * 60 * 1000)
+    );
+  };
+
+  const start = makePakistanDateTime(
+    event.startDate,
+    event.startTime,
+    false
+  );
+
+  const end = makePakistanDateTime(
+    event.endDate,
+    event.endTime,
+    true
+  );
+
+  if (now < start) return 'upcoming';
+  if (now > end) return 'expired';
+
+  return 'ongoing';
 }
 
 // Create event
@@ -444,6 +469,18 @@ router.post('/:id/self-checkin', verifyToken, async (req, res) => {
     const event = await Event.findById(req.params.id)
     if (!event) {
       return res.status(404).json({ message: 'Event not found' })
+    }
+
+        // Attendance is allowed only while the event is ongoing
+    const liveStatus = getLiveStatus(event);
+
+    if (liveStatus !== 'ongoing') {
+      return res.status(400).json({
+        message:
+          liveStatus === 'upcoming'
+            ? 'Attendance is not available yet. The event has not started.'
+            : 'Attendance is closed. The event has ended.'
+      });
     }
 
     const isRegistered = event.attendees.some(

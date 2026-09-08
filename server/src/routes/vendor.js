@@ -14,23 +14,48 @@ const bcrypt = require('bcryptjs');
 // based on its startDate/endDate (and startTime/endTime if present)
 function getLiveStatus(event) {
   const now = new Date();
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate);
 
-  if (event.startTime) {
-    const [sh, sm] = event.startTime.split(':');
-    start.setHours(parseInt(sh) || 0, parseInt(sm) || 0, 0, 0);
-  }
-  if (event.endTime) {
-    const [eh, em] = event.endTime.split(':');
-    end.setHours(parseInt(eh) || 23, parseInt(em) || 59, 0, 0);
-  } else {
-    end.setHours(23, 59, 59, 999);
-  }
+  const makePakistanDateTime = (dateValue, timeValue, isEnd = false) => {
+    const d = new Date(dateValue);
 
+    const year = d.getUTCFullYear();
+    const month = d.getUTCMonth();
+    const day = d.getUTCDate();
+
+    let hours = 0;
+    let minutes = 0;
+
+    if (timeValue) {
+      const parts = timeValue.split(':');
+      hours = Number(parts[0]) || 0;
+      minutes = Number(parts[1]) || 0;
+    } else if (isEnd) {
+      hours = 23;
+      minutes = 59;
+    }
+
+    // Pakistan Standard Time = UTC+5
+    return new Date(
+      Date.UTC(year, month, day, hours, minutes, isEnd ? 59 : 0, isEnd ? 999 : 0) - (5 * 60 * 60 * 1000)
+    );
+  };
+
+  const start = makePakistanDateTime(
+    event.startDate,
+    event.startTime,
+    false
+  );
+
+  const end = makePakistanDateTime(
+    event.endDate,
+    event.endTime,
+    true
+  );
+
+  if (now < start) return 'upcoming';
   if (now > end) return 'expired';
-  if (now >= start && now <= end) return 'ongoing';
-  return 'upcoming';
+
+  return 'ongoing';
 }
 
 function withLiveStatus(eventDoc) {
