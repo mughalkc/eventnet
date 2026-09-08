@@ -221,10 +221,11 @@ const Events = () => {
             <button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id)}
-              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap border ${
                 selectedTab === tab.id
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900'
+
               }`}
             >
               {tab.label}
@@ -314,14 +315,14 @@ const Events = () => {
                 <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center gap-2">
                   <button
                     onClick={() => setSelectedEventDetails(event)}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                   >
                     View Attendees ({event.attendees?.length || 0})
                   </button>
 
                   <button
                     onClick={() => handleDeleteEvent(event._id)}
-                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                     title="Delete Event"
                   >
                     <TrashIcon className="h-4 w-4" />

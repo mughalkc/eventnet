@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,14 @@ const Users = () => {
   const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user'
+  });
+  const [addingUser, setAddingUser] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -52,6 +60,48 @@ const Users = () => {
   const handleRoleFilter = (e) => {
     setSelectedRole(e.target.value);
   };
+
+  const handleAddUser = async (e) => {
+  e.preventDefault();
+
+  try {
+    setAddingUser(true);
+    setError(null);
+
+    await axios.post(
+      'https://eventnet-production.up.railway.app/api/admin/users',
+      newUser,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    setShowAddModal(false);
+
+    setNewUser({
+      name: '',
+      email: '',
+      password: '',
+      role: 'user'
+    });
+
+    await fetchUsers();
+
+    alert('User added successfully');
+  } catch (err) {
+    console.error('Error adding user:', err);
+
+    const message =
+      err.response?.data?.message ||
+      'Failed to add user. Please try again.';
+
+    setError(message);
+  } finally {
+    setAddingUser(false);
+  }
+};
 
   const handleStatusUpdate = async (userId, newStatus) => {
     try {
@@ -134,10 +184,13 @@ const Users = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-pink-500 text-transparent bg-clip-text">User Management</h1>
             <p className="mt-1 text-sm text-gray-500">Manage and monitor user accounts</p>
           </div>
-          <button className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-pink-500 hover:from-blue-700 hover:to-pink-600 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow">
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add New User
-          </button>
+          <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add New User
+            </button>
         </div>
       </div>
 
@@ -267,6 +320,130 @@ const Users = () => {
           </div>
         </div>
       </div>
+      {showAddModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+      
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Add New User
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => setShowAddModal(false)}
+          className="text-gray-400 hover:text-gray-700"
+        >
+          <XMarkIcon className="h-6 w-6" />
+        </button>
+      </div>
+
+      <form onSubmit={handleAddUser} className="p-6 space-y-4">
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Name
+          </label>
+
+          <input
+            type="text"
+            value={newUser.name}
+            onChange={(e) =>
+              setNewUser({
+                ...newUser,
+                name: e.target.value
+              })
+            }
+            required
+            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter user name"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+
+          <input
+            type="email"
+            value={newUser.email}
+            onChange={(e) =>
+              setNewUser({
+                ...newUser,
+                email: e.target.value
+              })
+            }
+            required
+            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter email"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Password
+          </label>
+
+          <input
+            type="password"
+            value={newUser.password}
+            onChange={(e) =>
+              setNewUser({
+                ...newUser,
+                password: e.target.value
+              })
+            }
+            required
+            minLength={6}
+            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter password"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Role
+          </label>
+
+          <select
+            value={newUser.role}
+            onChange={(e) =>
+              setNewUser({
+                ...newUser,
+                role: e.target.value
+              })
+            }
+            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+            <option value="vendor">Vendor</option>
+          </select>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowAddModal(false)}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={addingUser}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {addingUser ? 'Adding...' : 'Add User'}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 };
