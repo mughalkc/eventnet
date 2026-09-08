@@ -328,6 +328,27 @@ router.get('/events', verifyToken, verifyVendor, async (req, res) => {
   }
 });
 
+router.get('/events/:id', verifyToken, verifyVendor, async (req, res) => {
+  try {
+    const event = await Event.findOne({
+      _id: req.params.id,
+      createdBy: req.user.id
+    });
+
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found or unauthorized' });
+    }
+
+    res.json({
+      ...event.toObject(),
+      liveStatus: getLiveStatus(event)
+    });
+  } catch (error) {
+    console.error('Error fetching vendor event:', error);
+    res.status(500).json({ message: 'Failed to fetch event' });
+  }
+});
+
 // Get vendor's attendance list (Present vs Absent Breakdown)
 router.get('/events/:id/attendance', verifyToken, verifyVendor, async (req, res) => {
   try {

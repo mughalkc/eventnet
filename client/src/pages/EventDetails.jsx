@@ -89,7 +89,9 @@ export default function EventDetails() {
   const fetchEventDetails = async () => {
     try {
       const timestamp = new Date().getTime();
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}?_t=${timestamp}`, {
+      const response = await fetch(`${window.location.pathname.startsWith('/vendor-dashboard')
+          ? `https://eventnet-production.up.railway.app/api/vendor/events/${eventId}`
+          : `https://eventnet-production.up.railway.app/api/events/${eventId}`}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
