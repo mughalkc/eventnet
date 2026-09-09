@@ -307,7 +307,7 @@ const Users = () => {
                         )}
                         <button
                           onClick={() => handleDelete(user._id)}
-                          className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 text-red-600 hover:text-red-700 text-sm font-medium rounded-md transition-all duration-200"
+                          className="inline-flex items-center px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors"
                         >
                           Delete
                         </button>

@@ -466,6 +466,76 @@ router.post('/vendors/event-counts', verifyToken, verifyAdmin, async (req, res) 
   }
 });
 
+// Create ticket manually from admin panel
+router.post('/tickets', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const {
+      event,
+      user,
+      ticketType,
+      quantity,
+      totalAmount
+    } = req.body;
+
+    if (!event || !user || !quantity || totalAmount === undefined) {
+      return res.status(400).json({
+        message: 'Event, user, quantity and total amount are required'
+      });
+    }
+
+    const eventExists = await Event.findById(event);
+
+    if (!eventExists) {
+      return res.status(404).json({
+        message: 'Event not found'
+      });
+    }
+
+    const userExists = await User.findById(user);
+
+    if (!userExists) {
+      return res.status(404).json({
+        message: 'User not found'
+      });
+    }
+
+    const ticketCode =
+      'TKT-' +
+      Date.now().toString(36).toUpperCase() +
+      Math.random().toString(36).substring(2, 7).toUpperCase();
+
+    const newTicket = new Ticket({
+      event,
+      user,
+      ticketType: ticketType || 'General',
+      quantity: Number(quantity),
+      totalAmount: Number(totalAmount),
+      ticketCode,
+      paymentStatus: 'completed',
+      paymentMethod: 'admin'
+    });
+
+    await newTicket.save();
+
+    const createdTicket = await Ticket.findById(newTicket._id)
+      .populate('event', 'name startDate endDate location')
+      .populate('user', 'name email');
+
+    res.status(201).json({
+      message: 'Ticket created successfully',
+      ticket: createdTicket
+    });
+
+  } catch (error) {
+    console.error('Admin create ticket error:', error);
+
+    res.status(500).json({
+      message: 'Failed to create ticket',
+      error: error.message
+    });
+  }
+});
+
 // Ticket management routes
 router.get('/tickets', verifyToken, verifyAdmin, async (req, res) => {
   try {
