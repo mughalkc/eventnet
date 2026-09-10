@@ -44,31 +44,36 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
-  socketTimeoutMS: 45000, // Increase socket timeout
-  retryWrites: true,
-  retryReads: true
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => {
-  console.error('MongoDB connection error:', err);
-  console.log('Attempting to connect to local MongoDB fallback...');
-  
-  // Try connecting to a local MongoDB instance as fallback
-  mongoose.connect('mongodb://localhost:27017/eventnet', {
+if (mongoose.connection.readyState === 0) {
+  mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000
+    serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
+    socketTimeoutMS: 45000, // Increase socket timeout
+    retryWrites: true,
+    retryReads: true
   })
-  .then(() => console.log('Connected to local MongoDB fallback'))
-  .catch(localErr => {
-    console.error('Local MongoDB connection error:', localErr);
-    console.log('Please check your MongoDB connection settings or ensure MongoDB is running');
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+
+    // Local fallback only makes sense when running on your own machine,
+    // not on Vercel (there's no local MongoDB there).
+    if (!process.env.VERCEL) {
+      console.log('Attempting to connect to local MongoDB fallback...');
+      mongoose.connect('mongodb://localhost:27017/eventnet', {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000
+      })
+      .then(() => console.log('Connected to local MongoDB fallback'))
+      .catch(localErr => {
+        console.error('Local MongoDB connection error:', localErr);
+        console.log('Please check your MongoDB connection settings or ensure MongoDB is running');
+      });
+    }
   });
-});
+}
 
 // Initialize email service
 emailService.init();
@@ -98,6 +103,7 @@ const parseTimeForCron = (timeStr, defaultH, defaultM) => {
   return [h, m];
 };
 
+if (!process.env.VERCEL) {
 // AUTOMATED CRON JOB: Runs every 15 minutes to mark ABSENT & send emails
 cron.schedule('*/15 * * * *', async () => {
   try {
@@ -147,7 +153,7 @@ cron.schedule('*/15 * * * *', async () => {
     console.error('Error running expired attendance cron job:', error);
   }
 });
-
+}
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -155,6 +161,11 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
