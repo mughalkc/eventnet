@@ -31,7 +31,7 @@ export default function RegisterUser() {
 
     setIsLoading(true);
     try {
-      const response = await axios.post('https://eventnet-production.up.railway.app/api/auth/register', {
+      const response = await axios.post('https://eventnet-6c6d.vercel.app/api/auth/register', {
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -62,7 +62,7 @@ export default function RegisterUser() {
 
   try {
     const response = await axios.post(
-      'https://eventnet-production.up.railway.app/api/auth/verify-otp',
+      'https://eventnet-6c6d.vercel.app/api/auth/verify-otp',
       {
         userId,
         otp

@@ -36,7 +36,7 @@ const VendorEvents = () => {
         return;
       }
 
-      const response = await fetch('https://eventnet-production.up.railway.app/api/vendor/events', {
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/vendor/events', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -65,7 +65,7 @@ const VendorEvents = () => {
   const handleSendAbsentEmails = async (eventId, eventName) => {
     if (!window.confirm(`Send "missed event" emails to all absent attendees of "${eventName}"?`)) return;
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/vendor/events/${eventId}/send-absent-emails`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/vendor/events/${eventId}/send-absent-emails`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -84,7 +84,7 @@ const VendorEvents = () => {
     if (!window.confirm('Are you sure you want to delete this event?')) return;
 
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/vendor/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/vendor/events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

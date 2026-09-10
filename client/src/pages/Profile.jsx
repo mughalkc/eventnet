@@ -29,7 +29,7 @@ const Profile = () => {
       if (user.photo) {
         // Set the preview URL from the user's photo
         setPreviewUrl(user.photo.startsWith('/uploads') 
-          ? `https://eventnet-production.up.railway.app${user.photo}` 
+          ? `https://eventnet-6c6d.vercel.app${user.photo}` 
           : user.photo);
       }
     }
@@ -84,8 +84,8 @@ const Profile = () => {
       
       // Determine the correct endpoint based on user role
       const endpoint = user.role === 'vendor' 
-        ? 'https://eventnet-production.up.railway.app/api/vendor/profile' 
-        : 'https://eventnet-production.up.railway.app/api/auth/users/profile';
+        ? 'https://eventnet-6c6d.vercel.app/api/vendor/profile' 
+        : 'https://eventnet-6c6d.vercel.app/api/auth/users/profile';
       
       console.log(`Using endpoint for ${user.role} role:`, endpoint);
       
@@ -170,7 +170,7 @@ const Profile = () => {
         
         // Update the preview URL with the new photo path from the server
         if (updatedUserData.photo && updatedUserData.photo.startsWith('/uploads')) {
-          setPreviewUrl(`https://eventnet-production.up.railway.app${updatedUserData.photo}`);
+          setPreviewUrl(`https://eventnet-6c6d.vercel.app${updatedUserData.photo}`);
         }
         
         // Update the global user state

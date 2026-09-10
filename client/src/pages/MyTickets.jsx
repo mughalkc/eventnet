@@ -20,7 +20,7 @@ const TicketCard = ({ ticket }) => {
     }
     
     // Otherwise, prepend the server URL
-    return `https://eventnet-production.up.railway.app/${imageUrl.replace(/^\//, '')}`;
+    return `https://eventnet-6c6d.vercel.app/${imageUrl.replace(/^\//, '')}`;
   };
 
   const formatDate = (dateString) => {
@@ -441,7 +441,7 @@ const MyTickets = () => {
     try {
       setLoading(true);
       // First, fetch the user's registered events
-      const response = await fetch('https://eventnet-production.up.railway.app/api/events/user/registered', {
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/events/user/registered', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -530,3 +530,4 @@ const MyTickets = () => {
 };
 
 export default MyTickets;
+

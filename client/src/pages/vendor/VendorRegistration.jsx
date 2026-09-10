@@ -101,7 +101,7 @@ const VendorRegistration = () => {
         }
       });
 
-      const response = await fetch('https://eventnet-production.up.railway.app/api/vendor/register', {
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/vendor/register', {
         method: 'POST',
         body: formDataToSend
       });

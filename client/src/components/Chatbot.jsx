@@ -85,7 +85,7 @@ const Chatbot = ({ onClose }) => {
         content: msg.content
       }));
 
-      const response = await axios.post('https://eventnet-production.up.railway.app/api/chatbot', {
+      const response = await axios.post('https://eventnet-6c6d.vercel.app/api/chatbot', {
         message: currentInput,
         chatHistory: conversationHistory
       });
@@ -315,3 +315,4 @@ const Chatbot = ({ onClose }) => {
 };
 
 export default Chatbot;
+

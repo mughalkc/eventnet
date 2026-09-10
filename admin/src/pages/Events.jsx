@@ -61,17 +61,17 @@ const getImageUrl = (imageUrl) => {
     if (imageUrl.includes('\\')) {
       const parts = imageUrl.split(/[\\/]/);
       const filename = parts[parts.length - 1];
-      return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
+      return `https://eventnet-6c6d.vercel.app/uploads/events/${filename}`;
     }
     return imageUrl;
   }
   if (imageUrl.includes('\\')) {
     const parts = imageUrl.split(/[\\/]/);
     const filename = parts[parts.length - 1];
-    return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
+    return `https://eventnet-6c6d.vercel.app/uploads/events/${filename}`;
   } else {
     const cleanPath = imageUrl.replace(/^\//, '');
-    return `https://eventnet-production.up.railway.app/${cleanPath}`;
+    return `https://eventnet-6c6d.vercel.app/${cleanPath}`;
   }
 };
 
@@ -90,7 +90,7 @@ const Events = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('https://eventnet-production.up.railway.app/api/events', {
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/events', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -117,7 +117,7 @@ const Events = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

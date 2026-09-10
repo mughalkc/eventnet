@@ -20,7 +20,7 @@ const EventCard = ({ event }) => {
     }
     
     // Otherwise, prepend the server URL
-    return `https://eventnet-production.up.railway.app/${imageUrl.replace(/^\//, '')}`;
+    return `https://eventnet-6c6d.vercel.app/${imageUrl.replace(/^\//, '')}`;
   };
 
   const handleImageLoad = () => {
@@ -115,7 +115,7 @@ export default function UserEvents() {
 
   const fetchUserEvents = async () => {
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/user/registered`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/user/registered`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -142,7 +142,7 @@ export default function UserEvents() {
 
   const handleCancelRegistration = async (eventId) => {
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/cancel`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

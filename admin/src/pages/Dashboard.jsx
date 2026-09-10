@@ -58,7 +58,7 @@ const Dashboard = () => {
     setActivitiesLoading(true);
     try {
       // Use the same fetch pattern as other admin components
-      const response = await fetch('https://eventnet-production.up.railway.app/api/admin/recent-activities?limit=10', {
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/admin/recent-activities?limit=10', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }
@@ -90,10 +90,10 @@ const Dashboard = () => {
   const fetchStats = async () => {
     try {
       // Fetch basic dashboard stats
-      const statsResponse = await axios.get('https://eventnet-production.up.railway.app/api/admin/dashboard-stats')
+      const statsResponse = await axios.get('https://eventnet-6c6d.vercel.app/api/admin/dashboard-stats')
       
       // Fetch events for distribution data
-      const eventsResponse = await axios.get('https://eventnet-production.up.railway.app/api/admin/events')
+      const eventsResponse = await axios.get('https://eventnet-6c6d.vercel.app/api/admin/events')
       const events = eventsResponse.data || []
 
       // Calculate active events dynamically
@@ -114,7 +114,7 @@ const Dashboard = () => {
       });
       
       // Fetch users for user activity
-      const usersResponse = await axios.get('https://eventnet-production.up.railway.app/api/admin/users')
+      const usersResponse = await axios.get('https://eventnet-6c6d.vercel.app/api/admin/users')
       const users = usersResponse.data || []
 
       // Process monthly revenue data

@@ -10,7 +10,7 @@ const Messages = () => {
   const fetchMessages = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('https://eventnet-production.up.railway.app/api/contact', {
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/contact', {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch messages');
@@ -30,7 +30,7 @@ const Messages = () => {
     try {
       setDeletingId(messageId);
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/contact/${messageId}`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/contact/${messageId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });

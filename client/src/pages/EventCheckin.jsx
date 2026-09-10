@@ -25,7 +25,7 @@ export default function EventCheckin() {
         body.longitude = longitude
       }
 
-      fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/self-checkin`, {
+      fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/self-checkin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

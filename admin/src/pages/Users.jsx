@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE = 'https://eventnet-production.up.railway.app/api/admin/users';
+const API_BASE = 'https://eventnet-6c6d.vercel.app/api/admin/users';
 
 const Users = () => {
   const { user, loading: authLoading, token } = useAuth();
@@ -69,7 +69,7 @@ const Users = () => {
     setError(null);
 
     await axios.post(
-      'https://eventnet-production.up.railway.app/api/admin/users',
+      'https://eventnet-6c6d.vercel.app/api/admin/users',
       newUser,
       {
         headers: {

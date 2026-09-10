@@ -20,7 +20,7 @@ const VendorQRCodes = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true)
-      const response = await fetch('https://eventnet-production.up.railway.app/api/vendor/events', {
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/vendor/events', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -232,3 +232,4 @@ const VendorQRCodes = () => {
 }
 
 export default VendorQRCodes
+

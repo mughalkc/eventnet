@@ -34,7 +34,7 @@ const [addingUser, setAddingUser] = useState(false);
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('https://eventnet-production.up.railway.app/api/admin/users');
+      const response = await axios.get('https://eventnet-6c6d.vercel.app/api/admin/users');
       setUsers(response.data);
       setLoading(false);
     } catch (error) {
@@ -59,7 +59,7 @@ const [addingUser, setAddingUser] = useState(false);
     setAddingUser(true);
 
     await axios.post(
-      'https://eventnet-production.up.railway.app/api/admin/users',
+      'https://eventnet-6c6d.vercel.app/api/admin/users',
       newUser
     );
 
@@ -127,7 +127,7 @@ const [addingUser, setAddingUser] = useState(false);
       // Show loading toast while updating
       const loadingToast = toast.loading('Updating user...');
       
-      const response = await axios.put(`https://eventnet-production.up.railway.app/api/admin/users/${currentUser._id}`, {
+      const response = await axios.put(`https://eventnet-6c6d.vercel.app/api/admin/users/${currentUser._id}`, {
         ...editFormData
       });
       
@@ -164,7 +164,7 @@ const [addingUser, setAddingUser] = useState(false);
       // Show loading toast while deleting
       const loadingToast = toast.loading('Deleting user...');
       
-      const response = await axios.delete(`https://eventnet-production.up.railway.app/api/admin/users/${currentUser._id}`);
+      const response = await axios.delete(`https://eventnet-6c6d.vercel.app/api/admin/users/${currentUser._id}`);
       
       // Check if the request was successful
       if (response.status === 200) {
@@ -579,3 +579,4 @@ const [addingUser, setAddingUser] = useState(false);
 };
 
 export default UserManagement;
+

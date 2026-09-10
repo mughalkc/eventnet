@@ -32,7 +32,7 @@ const Tickets = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('https://eventnet-production.up.railway.app/api/admin/tickets');
+      const response = await axios.get('https://eventnet-6c6d.vercel.app/api/admin/tickets');
       setTickets(response.data);
       setLoading(false);
     } catch (error) {
@@ -45,8 +45,8 @@ const Tickets = () => {
   const fetchCreateTicketData = async () => {
   try {
     const [eventsResponse, usersResponse] = await Promise.all([
-      axios.get('https://eventnet-production.up.railway.app/api/events'),
-      axios.get('https://eventnet-production.up.railway.app/api/admin/users')
+      axios.get('https://eventnet-6c6d.vercel.app/api/events'),
+      axios.get('https://eventnet-6c6d.vercel.app/api/admin/users')
     ]);
 
     setEvents(Array.isArray(eventsResponse.data) ? eventsResponse.data : []);
@@ -69,7 +69,7 @@ const handleCreateTicket = async (e) => {
     setCreatingTicket(true);
 
     await axios.post(
-      'https://eventnet-production.up.railway.app/api/admin/tickets',
+      'https://eventnet-6c6d.vercel.app/api/admin/tickets',
       {
         event: newTicket.event,
         user: newTicket.user,
@@ -128,7 +128,7 @@ const handleCreateTicket = async (e) => {
   const handleDownload = async (ticketId) => {
     try {
       setGenerating(true);
-      const response = await axios.get(`https://eventnet-production.up.railway.app/api/admin/tickets/${ticketId}/download`, {
+      const response = await axios.get(`https://eventnet-6c6d.vercel.app/api/admin/tickets/${ticketId}/download`, {
         responseType: 'blob'
       });
       
@@ -475,3 +475,4 @@ const handleCreateTicket = async (e) => {
 };
 
 export default Tickets;
+

@@ -28,7 +28,7 @@ const getImageUrl = (event) => {
   }
   
   const cleanPath = event.image.replace(/^\//, '').replace(/\\/g, '/');
-  return `https://eventnet-production.up.railway.app/${cleanPath}`;
+  return `https://eventnet-6c6d.vercel.app/${cleanPath}`;
 };
 
 export default function EventDetails() {
@@ -89,7 +89,7 @@ export default function EventDetails() {
   const fetchEventDetails = async () => {
     try {
       const timestamp = new Date().getTime();
-        const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}?_t=${timestamp}`, {
+        const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
@@ -112,7 +112,7 @@ export default function EventDetails() {
   // Fetch list of attendees/guests for the specific event
   const fetchGuests = async () => {
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/guests`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/guests`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -140,7 +140,7 @@ export default function EventDetails() {
   // Fetch list of event registrations
   const fetchRegistrations = async () => {
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/registrations`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/registrations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -162,7 +162,7 @@ export default function EventDetails() {
   // Fetch organizer analytics and insights for the event
   const fetchInsights = async () => {
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/insights`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/insights`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -184,7 +184,7 @@ export default function EventDetails() {
   // Handle event deletion (accessible by creators/vendors/admins)
   const handleDelete = async () => {
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -210,7 +210,7 @@ export default function EventDetails() {
       return;
     }
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +239,7 @@ export default function EventDetails() {
       return;
     }
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -299,7 +299,7 @@ export default function EventDetails() {
           body.longitude = longitude
         }
 
-        const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/self-checkin`, {
+        const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/self-checkin`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

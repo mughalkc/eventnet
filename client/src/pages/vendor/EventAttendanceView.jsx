@@ -11,7 +11,7 @@ const EventAttendanceView = ({ eventId }) => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const res = await axios.get(`https://eventnet-production.up.railway.app/api/vendor/events/${eventId}/attendance`, {
+        const res = await axios.get(`https://eventnet-6c6d.vercel.app/api/vendor/events/${eventId}/attendance`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setAttendance(res.data);

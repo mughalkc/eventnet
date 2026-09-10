@@ -6,8 +6,8 @@
 //   // - On computer (localhost): uses localhost:5001
 //   // - On phone/other device (via IP): uses same IP with port 5001
 //   apiUrl: isLocalNetwork 
-//     ? `https://eventnet-production.up.railway.app/api`
-//     : 'https://eventnet-production.up.railway.app/api',
+//     ? `https://eventnet-6c6d.vercel.app/api`
+//     : 'https://eventnet-6c6d.vercel.app/api',
 //   googleMapsApiKey: '',
 //   maxImageSize: 5 * 1024 * 1024,
 //   defaultMapLocation: {
@@ -20,7 +20,7 @@
 
 
 // const config = {
-//   apiUrl: 'https://eventnet-production.up.railway.app/api',
+//   apiUrl: 'https://eventnet-6c6d.vercel.app/api',
 //   googleMapsApiKey: '',
 //   maxImageSize: 5 * 1024 * 1024,
 //   defaultMapLocation: {
@@ -36,7 +36,7 @@ const isDevelopment = import.meta.env.DEV;
 
 const apiUrl = isDevelopment
   ? 'http://localhost:5001/api'
-  : 'https://eventnet-production.up.railway.app/api';
+  : 'https://eventnet-6c6d.vercel.app/api';
 
 const config = {
  
@@ -56,6 +56,7 @@ const config = {
 
 
 export default config;
+
 
 
 

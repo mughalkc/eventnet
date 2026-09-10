@@ -78,17 +78,17 @@ const EventCard = ({ event, onRegister, onCancel }) => {
       if (imageUrl.includes('\\')) {
         const parts = imageUrl.split(/[\\/]/);
         const filename = parts[parts.length - 1];
-        return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
+        return `https://eventnet-6c6d.vercel.app/uploads/events/${filename}`;
       }
       return imageUrl;
     }
     if (imageUrl.includes('\\')) {
       const parts = imageUrl.split(/[\\/]/);
       const filename = parts[parts.length - 1];
-      return `https://eventnet-production.up.railway.app/uploads/events/${filename}`;
+      return `https://eventnet-6c6d.vercel.app/uploads/events/${filename}`;
     } else {
       const cleanPath = imageUrl.replace(/^\//, '');
-      return `https://eventnet-production.up.railway.app/${cleanPath}`;
+      return `https://eventnet-6c6d.vercel.app/${cleanPath}`;
     }
   };
 
@@ -236,7 +236,7 @@ const EventList = () => {
 
   useEffect(() => {
     if (!user) return;
-    const socket = new WebSocket(`wss://eventnet-production.up.railway.app/ws/events/${user.id || user._id}`);
+    const socket = new WebSocket(`wss://eventnet-6c6d.vercel.app/ws/events/${user.id || user._id}`);
     
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -258,7 +258,7 @@ const EventList = () => {
   const fetchEvents = async (retryCount = 0) => {
     try {
       setLoading(true)
-      const response = await fetch('https://eventnet-production.up.railway.app/api/events/public')
+      const response = await fetch('https://eventnet-6c6d.vercel.app/api/events/public')
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -294,7 +294,7 @@ const EventList = () => {
 
   const onRegister = async (eventId) => {
     try {
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/register`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -342,7 +342,7 @@ const EventList = () => {
     try {
       const userIdStr = user.id || user._id;
 
-      const response = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}/cancel`, {
+      const response = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -377,7 +377,7 @@ const EventList = () => {
 
   const handleRegister = async (eventId) => {
     try {
-      const eventResponse = await fetch(`https://eventnet-production.up.railway.app/api/events/${eventId}`, {
+      const eventResponse = await fetch(`https://eventnet-6c6d.vercel.app/api/events/${eventId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -477,3 +477,4 @@ const EventList = () => {
 }
 
 export default EventList;
+

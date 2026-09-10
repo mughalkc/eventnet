@@ -35,3 +35,4 @@ const StructuredResponse = ({ data }) => {
 };
 
 export default StructuredResponse;
+

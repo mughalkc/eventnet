@@ -153,7 +153,7 @@ const dropdownRef = useRef(null);
                   <div className="h-9 w-9 rounded-full bg-gradient-to-r from-[#4169E1] to-[#FF1493] flex items-center justify-center text-white text-lg font-medium overflow-hidden">
                     {user && user.photo && user.photo.startsWith('/uploads') ? (
                       <img 
-                        src={`https://eventnet-production.up.railway.app${user.photo}`} 
+                        src={`https://eventnet-6c6d.vercel.app${user.photo}`} 
                         alt="Profile" 
                         className="h-full w-full object-cover"
                         onError={(e) => {
