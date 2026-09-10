@@ -44,36 +44,35 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Connect to MongoDB
-if (mongoose.connection.readyState === 0) {
-  mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
-    socketTimeoutMS: 45000, // Increase socket timeout
-    retryWrites: true,
-    retryReads: true
-  })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-
-    // Local fallback only makes sense when running on your own machine,
-    // not on Vercel (there's no local MongoDB there).
-    if (!process.env.VERCEL) {
-      console.log('Attempting to connect to local MongoDB fallback...');
-      mongoose.connect('mongodb://localhost:27017/eventnet', {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000
-      })
-      .then(() => console.log('Connected to local MongoDB fallback'))
-      .catch(localErr => {
-        console.error('Local MongoDB connection error:', localErr);
-        console.log('Please check your MongoDB connection settings or ensure MongoDB is running');
-      });
-    }
-  });
+let dbConnection;
+function connectDB() {
+  if (!dbConnection) {
+    dbConnection = mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      retryWrites: true,
+      retryReads: true
+    });
+  }
+  return dbConnection;
 }
+connectDB().then(() => console.log('Connected to MongoDB')).catch(err => console.error('MongoDB connection error:', err));
+
+// Make sure DB is connected before handling any request (important for serverless cold starts)
+app.use(async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    next();
+  } catch (err) {
+    console.error('DB wait error:', err);
+    res.status(503).json({ message: 'Database connecting, please retry in a few seconds' });
+  }
+});
+
 
 // Initialize email service
 emailService.init();
