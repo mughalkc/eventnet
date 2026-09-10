@@ -44,28 +44,32 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Connect to MongoDB
-let dbConnection;
-function connectDB() {
-  if (!dbConnection) {
-    dbConnection = mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      retryWrites: true,
-      retryReads: true
+async function connectDB() {
+  if (mongoose.connection.readyState === 1) return; // already connected
+  if (mongoose.connection.readyState === 2) {
+    // a connection attempt is already in progress, wait for it
+    await new Promise((resolve, reject) => {
+      mongoose.connection.once('connected', resolve);
+      mongoose.connection.once('error', reject);
     });
+    return;
   }
-  return dbConnection;
+  await mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 8000,
+    socketTimeoutMS: 45000,
+    retryWrites: true,
+    retryReads: true
+  });
 }
+
 connectDB().then(() => console.log('Connected to MongoDB')).catch(err => console.error('MongoDB connection error:', err));
 
 // Make sure DB is connected before handling any request (important for serverless cold starts)
 app.use(async (req, res, next) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await connectDB();
-    }
+    await connectDB();
     next();
   } catch (err) {
     console.error('DB wait error:', err);
