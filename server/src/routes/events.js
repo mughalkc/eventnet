@@ -194,8 +194,14 @@ router.get('/public', async (req, res) => {
       
       let imageUrl = null;
       if (eventObj.image) {
-        const imagePath = eventObj.image.replace(/^\//, '');
-        imageUrl = `https://eventnet-production.up.railway.app/uploads/events/${imagePath.replace('uploads/events/', '')}`;
+        // Cloudinary (or any other) full URLs should be used as-is.
+        if (eventObj.image.startsWith('http://') || eventObj.image.startsWith('https://')) {
+          imageUrl = eventObj.image;
+        } else {
+          // Old-style relative paths from the previous (Railway) setup.
+          const imagePath = eventObj.image.replace(/^\//, '');
+          imageUrl = `https://eventnet-production.up.railway.app/uploads/events/${imagePath.replace('uploads/events/', '')}`;
+        }
       }
       
       return {
@@ -203,7 +209,7 @@ router.get('/public', async (req, res) => {
         name: eventObj.name || 'Untitled Event',
         description: eventObj.description || '',
         location: eventObj.location || 'Location not specified',
-        image: imageUrl || 'https://via.placeholder.com/300x200?text=Event+Image',
+        image: imageUrl || null,
         startDate: eventObj.startDate,
         endDate: eventObj.endDate,
         startTime: eventObj.startTime,
@@ -242,14 +248,16 @@ router.get('/user/registered', verifyToken, async (req, res) => {
     .populate('createdBy', 'name email avatar')
     .sort({ startDate: 1 });
     
-    const transformedEvents = events.map(event => {
+   const transformedEvents = events.map(event => {
       const eventObj = event.toObject();
       return {
         ...eventObj,
         liveStatus: getLiveStatus(eventObj),
-        image: eventObj.image 
-          ? `https://eventnet-production.up.railway.app/${eventObj.image.replace(/^\//, '')}` 
-          : 'https://via.placeholder.com/400x200?text=Event+Image'
+        image: eventObj.image
+          ? (eventObj.image.startsWith('http://') || eventObj.image.startsWith('https://')
+              ? eventObj.image
+              : `https://eventnet-production.up.railway.app/${eventObj.image.replace(/^\//, '')}`)
+          : null
       };
     });
     
