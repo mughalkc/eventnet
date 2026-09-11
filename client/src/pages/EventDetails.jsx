@@ -21,7 +21,7 @@ import {
 
 // Helper function to resolve event image URL (handles external links and relative server uploads)
 const getImageUrl = (event) => {
-  if (!event || !event.image) return 'https://via.placeholder.com/400x300?text=Event+Image';
+  if (!event || !event.image) return '/default-event.jpg'; 
   
   if (event.image.startsWith('http://') || event.image.startsWith('https://')) {
     return event.image;
@@ -406,7 +406,7 @@ export default function EventDetails() {
                   <div key={guest._id} className="py-4 flex items-center justify-between">
                     <div className="flex items-center">
                       <img
-                        src={guest.avatar || 'https://via.placeholder.com/40'}
+                        src={guest.avatar || '/default-event.jpg'}
                         alt={guest.name}
                         className="w-10 h-10 rounded-full"
                       />
@@ -536,7 +536,7 @@ export default function EventDetails() {
                         }}
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = 'https://via.placeholder.com/400x300?text=Event+Image';
+                          e.target.src = '/default-event.jpg';
                         }}
                       />
                     </div>
