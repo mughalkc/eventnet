@@ -9,6 +9,7 @@ const Event = require('../models/Event');
 const User = require('../models/User');
 const emailService = require('../utils/emailService');
 const bcrypt = require('bcryptjs');
+const { uploadBufferToCloudinary } = require('../utils/cloudinary');
 
 // Helper: figure out if an event is upcoming, ongoing, or expired
 // based on its startDate/endDate (and startTime/endTime if present)
@@ -75,36 +76,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Set up multer for profile photo uploads
-const profileStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const fs = require('fs');
-    const dir = 'uploads/profiles';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-const profileUpload = multer({ storage: profileStorage });
-
-// Set up multer for event image uploads
-const eventImageStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/events/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'event-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Uploads now go straight to Cloudinary (Vercel's serverless filesystem is
+// read-only, so we keep files in memory only long enough to forward them).
+const upload = multer({ storage: multer.memoryStorage() });
+const profileUpload = multer({ storage: multer.memoryStorage() });
 
 const eventUpload = multer({
-  storage: eventImageStorage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
@@ -139,9 +117,11 @@ router.post('/register', upload.array('portfolio'), async (req, res) => {
       return res.status(400).json({ message: 'Email already registered.' });
     }
 
-    let portfolio = [];
+   let portfolio = [];
     if (req.files && req.files.length > 0) {
-      portfolio = req.files.map(file => file.path);
+      portfolio = await Promise.all(
+        req.files.map(file => uploadBufferToCloudinary(file.buffer, 'eventnet/portfolio'))
+      );
     }
 
     let parsedSocialLinks = {};
@@ -451,8 +431,8 @@ router.post('/events', verifyToken, verifyVendor, eventUpload.single('image'), a
       hostAvatar: req.user.avatar
     };
 
-    if (req.file) {
-      eventData.image = req.file.path;
+     if (req.file) {
+      eventData.image = await uploadBufferToCloudinary(req.file.buffer, 'eventnet/events');
     }
 
     const event = new Event(eventData);
@@ -491,8 +471,8 @@ router.put('/events/:id', verifyToken, verifyVendor, eventUpload.single('image')
         }
       });
       
-      if (req.file) {
-        event.image = req.file.path;
+       if (req.file) {
+        event.image = await uploadBufferToCloudinary(req.file.buffer, 'eventnet/events');
       }
     }
     
@@ -601,9 +581,9 @@ router.put('/profile', verifyToken, profileUpload.single('photo'), async (req, r
       socialLinks
     } = req.body;
 
-    let photoPath = null;
+     let photoPath = null;
     if (req.file) {
-      photoPath = `/uploads/profiles/${req.file.filename}`;
+      photoPath = await uploadBufferToCloudinary(req.file.buffer, 'eventnet/profiles');
     }
 
     let parsedSocialLinks = {};

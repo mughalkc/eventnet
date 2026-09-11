@@ -244,22 +244,11 @@ router.get('/me', verifyToken, async (req, res) => {
 
 // Update user profile
 // Configure storage for profile photos
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    const dir = path.join(__dirname, '../../uploads/profiles');
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function(req, file, cb) {
-    cb(null, 'profile-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname));
-  }
-});
+const { uploadBufferToCloudinary } = require('../utils/cloudinary');
 
-const upload = multer({ 
-  storage: storage,
+const upload = multer({
+
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: function(req, file, cb) {
     const filetypes = /jpeg|jpg|png|gif/;
@@ -311,19 +300,8 @@ router.put('/users/profile', verifyToken, upload.single('photo'), async (req, re
     user.phone = phone || user.phone;
     
     // If a new photo was uploaded, update the photo field
-    if (req.file) {
-      // If there was a previous photo, you might want to delete it
-      if (user.photo && user.photo.startsWith('/uploads/')) {
-        const oldPhotoPath = path.join(__dirname, '../..', user.photo);
-        console.log('Checking for old photo at:', oldPhotoPath);
-        if (fs.existsSync(oldPhotoPath)) {
-          console.log('Deleting old photo');
-          fs.unlinkSync(oldPhotoPath);
-        }
-      }
-      
-      // Set the new photo path
-      user.photo = `/uploads/profiles/${req.file.filename}`;
+   if (req.file) {
+      user.photo = await uploadBufferToCloudinary(req.file.buffer, 'eventnet/profiles');
       console.log('Updated photo path:', user.photo);
     }
     

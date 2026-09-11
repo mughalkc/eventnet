@@ -4,6 +4,7 @@ const User = require('../models/User')
 const { verifyToken } = require('../middleware/auth')
 const { sendEventNotification } = require('../utils/notifications')
 const upload = require('../middleware/upload')
+const { uploadBufferToCloudinary } = require('../utils/cloudinary');
 
 const router = express.Router()
 
@@ -110,6 +111,10 @@ router.post('/', verifyToken, upload.single('image'), async (req, res) => {
       return res.status(400).json({ message: 'Max capacity is required and must be greater than 0' })
     }
 
+    const imageUrl = req.file
+      ? await uploadBufferToCloudinary(req.file.buffer, 'eventnet/events')
+      : null;
+
     const event = new Event({
       name,
       startDate: startDateTime,
@@ -123,7 +128,7 @@ router.post('/', verifyToken, upload.single('image'), async (req, res) => {
       maxCapacity: capacity === 'limited' ? maxCapacity : null,
       createdBy: req.user.id,
       createdByModel: req.user.role === 'vendor' ? 'Vendor' : 'User',
-      image: req.file ? `/uploads/events/${req.file.filename}` : null
+      image: imageUrl
     })
 
     console.log('Creating event with data:', event)
