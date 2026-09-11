@@ -74,7 +74,6 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   }
 });
-const upload = multer({ storage: storage });
 
 // Uploads now go straight to Cloudinary (Vercel's serverless filesystem is
 // read-only, so we keep files in memory only long enough to forward them).
