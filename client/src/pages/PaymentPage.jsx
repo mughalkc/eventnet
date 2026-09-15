@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -18,6 +18,7 @@ import {
 export default function PaymentPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAdmin } = useAuth(); // Get user and role information
   const [event, setEvent] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -46,6 +47,39 @@ export default function PaymentPage() {
       fetchPaymentHistory();
     }
   }, [eventId]);
+
+    useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    const sessionId = searchParams.get('session_id');
+
+    if (paymentStatus === 'success' && sessionId) {
+      (async () => {
+        try {
+          const response = await fetch('https://eventnet-6c6d.vercel.app/api/payments/confirm-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ sessionId })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Could not confirm payment');
+          }
+
+          toast.success('Payment successful! You are now registered for the event.');
+          navigate(`/events/${eventId}`);
+        } catch (error) {
+          console.error('Payment confirmation error:', error);
+          toast.error(error.message || 'Payment confirmation failed.');
+        }
+      })();
+    } else if (paymentStatus === 'cancelled') {
+      toast.error('Payment was cancelled.');
+    }
+  }, [searchParams, eventId]);
 
   const fetchEventDetails = async () => {
     try {
@@ -155,56 +189,67 @@ export default function PaymentPage() {
       return;
     }
 
-    setPaymentProcessing(true);
+        setPaymentProcessing(true);
     try {
-      // Process the payment on the server
-      const paymentData = {
-        eventId: eventId,
-        ticketId: selectedTicket._id,
-        quantity: quantity,
-        amount: selectedTicket.price * quantity,
-        paymentMethod: {
-          cardNumber: paymentDetails.cardNumber.slice(-4),
-          cardName: paymentDetails.cardName
+      if (import.meta.env.DEV) {
+        // LOCAL DEVELOPMENT: keep using the fast, simulated flow
+        // (no real payment gateway needed while coding/testing locally).
+        const paymentData = {
+          eventId: eventId,
+          ticketId: selectedTicket._id,
+          quantity: quantity,
+          amount: selectedTicket.price * quantity,
+          paymentMethod: {
+            cardNumber: paymentDetails.cardNumber.slice(-4),
+            cardName: paymentDetails.cardName
+          }
+        };
+
+        const response = await fetch('http://localhost:5001/api/payments/process', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(paymentData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Payment processing failed');
         }
-      };
 
-      const response = await fetch('https://eventnet-6c6d.vercel.app/api/payments/process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(paymentData)
-      });
+        toast.success('Payment successful! You are now registered for the event.');
+        navigate(`/events/${eventId}`);
+      } else {
+        // LIVE SITE: use real Stripe Checkout
+        const paymentData = {
+          eventId: eventId,
+          ticketId: selectedTicket._id,
+          quantity: quantity,
+          amount: selectedTicket.price * quantity
+        };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Payment processing failed');
+        const response = await fetch('https://eventnet-6c6d.vercel.app/api/payments/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(paymentData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Could not start payment');
+        }
+
+        const { url } = await response.json();
+        window.location.href = url;
       }
-
-      const result = await response.json();
-      
-      toast.success('Payment successful! You are now registered for the event.');
-      
-      // Add the payment to history
-      const newPayment = {
-        _id: result.paymentId || Date.now().toString(),
-        eventId: eventId,
-        eventName: event.name,
-        date: new Date().toISOString(),
-        amount: selectedTicket.price * quantity,
-        status: 'completed',
-        ticketCount: quantity,
-        cardLast4: paymentDetails.cardNumber.slice(-4)
-      };
-      
-      setPaymentHistory(prev => [newPayment, ...prev]);
-      navigate(`/events/${eventId}`);
     } catch (error) {
       console.error('Payment error:', error);
       toast.error(error.message || 'Payment failed. Please try again.');
-    } finally {
       setPaymentProcessing(false);
     }
   };

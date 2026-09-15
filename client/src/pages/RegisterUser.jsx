@@ -7,12 +7,23 @@ import { toast } from 'react-hot-toast';
 export default function RegisterUser() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    phone: ''
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const [showOTP, setShowOTP] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -29,14 +40,19 @@ export default function RegisterUser() {
       return;
     }
 
-    setIsLoading(true);
+        setIsLoading(true);
     try {
-      const response = await axios.post('https://eventnet-6c6d.vercel.app/api/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role: 'user'
-      });
+      const submitData = new FormData();
+      submitData.append('name', formData.name);
+      submitData.append('email', formData.email);
+      submitData.append('password', formData.password);
+      submitData.append('phone', formData.phone);
+      submitData.append('role', 'user');
+      if (photoFile) {
+        submitData.append('photo', photoFile);
+      }
+
+      const response = await axios.post('https://eventnet-6c6d.vercel.app/api/auth/register', submitData);
 
       if (response.data.requiresVerification) {
           setUserId(response.data.userId);
@@ -179,6 +195,39 @@ export default function RegisterUser() {
                 className="w-full px-4 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="Enter your email"
               />
+            </div>
+
+                          <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-1">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                required
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-4 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Enter your phone number"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="photo" className="block text-sm font-medium text-gray-300 mb-1">
+                Profile Picture (optional)
+              </label>
+              <input
+                type="file"
+                id="photo"
+                name="photo"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="w-full px-4 py-2 bg-white/10 border border-gray-600 rounded-lg text-white file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-purple-600 file:text-white"
+              />
+              {photoPreview && (
+                <img src={photoPreview} alt="Preview" className="mt-2 w-16 h-16 rounded-full object-cover" />
+              )}
             </div>
 
             <div>

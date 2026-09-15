@@ -5,6 +5,7 @@ const Event = require('../models/Event');
 const Ticket = require('../models/Ticket');
 const Revenue = require('../models/Revenue');
 const mongoose = require('mongoose');
+const { createCheckoutSession, getCheckoutSession } = require('../utils/stripe');
 
 // Process a payment and create revenue record
 router.post('/process', verifyToken, async (req, res) => {
@@ -152,6 +153,150 @@ router.get('/history', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching payment history:', error);
     return res.status(500).json({ message: 'Error fetching payment history', error: error.message });
+  }
+});
+
+router.post('/create-checkout-session', verifyToken, async (req, res) => {
+  try {
+    const { eventId, ticketId, quantity, amount } = req.body;
+    const userId = req.user.id;
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const ticketInfo = event.tickets && event.tickets.find(t => t._id.toString() === ticketId);
+
+    const origin = req.headers.origin || 'https://eventnet-kappa.vercel.app';
+    const successUrl = `${origin}/events/${eventId}/checkout?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${origin}/events/${eventId}/checkout?payment=cancelled`;
+
+    const session = await createCheckoutSession({
+      eventName: event.name,
+      ticketName: ticketInfo ? ticketInfo.name : 'Ticket',
+      unitAmount: amount / quantity,
+      quantity,
+      successUrl,
+      cancelUrl,
+      metadata: { eventId, ticketId, quantity: String(quantity), userId }
+    });
+
+    return res.status(200).json({ url: session.url });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    return res.status(500).json({ message: 'Error starting payment', error: error.message });
+  }
+});
+
+router.post('/confirm-session', verifyToken, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { sessionId } = req.body;
+    const userId = req.user.id;
+
+    const checkoutSession = await getCheckoutSession(sessionId);
+
+    if (checkoutSession.payment_status !== 'paid') {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: 'Payment not completed' });
+    }
+
+    const existing = await Ticket.findOne({ paymentId: checkoutSession.id }).session(session);
+    if (existing) {
+      await session.commitTransaction();
+      session.endSession();
+      return res.status(200).json({ success: true, message: 'Payment already confirmed', ticketId: existing._id });
+    }
+
+    const { eventId, ticketId, quantity } = checkoutSession.metadata;
+    const amount = checkoutSession.amount_total / 100;
+
+    const event = await Event.findById(eventId).session(session);
+    if (!event) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const vendorId = event.createdBy;
+
+    const generateTicketCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return `${event.name.substring(0, 3).toUpperCase()}-${code}`;
+    };
+
+    const ticketPurchase = new Ticket({
+      event: eventId,
+      user: userId,
+      ticketType: ticketId,
+      quantity: Number(quantity),
+      totalAmount: amount,
+      paymentStatus: 'completed',
+      ticketCode: generateTicketCode(),
+      paymentMethod: 'stripe',
+      paymentId: checkoutSession.id
+    });
+
+    await ticketPurchase.save({ session });
+
+    const platformFee = parseFloat((amount * 0.10).toFixed(2));
+    const netAmount = parseFloat((amount - platformFee).toFixed(2));
+
+    const revenue = new Revenue({
+      vendor: vendorId,
+      event: eventId,
+      ticket: ticketPurchase._id,
+      amount: amount,
+      fee: platformFee,
+      netAmount: netAmount,
+      status: 'paid',
+      paymentMethod: 'stripe',
+      paidDate: new Date(),
+      transactionId: checkoutSession.payment_intent
+    });
+
+    await revenue.save({ session });
+
+    if (!event.attendees.includes(userId)) {
+      event.attendees.push(userId);
+      await event.save({ session });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    try {
+      const user = await mongoose.model('User').findById(userId);
+      const ticketInfo = event.tickets && event.tickets.find(t => t._id.toString() === ticketId);
+      const emailService = require('../utils/emailService');
+      await emailService.sendTicketConfirmationEmail(
+        user.email,
+        user.name,
+        event,
+        { ticketInfo, quantity: Number(quantity), totalAmount: amount, ticketCode: ticketPurchase.ticketCode }
+      );
+    } catch (emailError) {
+      console.error('Error sending ticket confirmation email:', emailError);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment confirmed and ticket created',
+      ticketId: ticketPurchase._id
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error('Error confirming payment session:', error);
+    return res.status(500).json({ message: 'Error confirming payment', error: error.message });
   }
 });
 
