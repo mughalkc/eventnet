@@ -665,6 +665,7 @@ export default function PaymentPage() {
 
             {/* Payment Form */}
             <form onSubmit={handlePaymentSubmit} className="space-y-6">
+            {import.meta.env.DEV && (<>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Card Number
@@ -738,7 +739,7 @@ export default function PaymentPage() {
                   />
                 </div>
               </div>
-
+      </>)}
               {/* Order Summary */}
               <div className="border-t border-gray-200 pt-4 mt-6">
                 <div className="flex justify-between text-sm mb-2">
