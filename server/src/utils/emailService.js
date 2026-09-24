@@ -125,9 +125,9 @@ function logEmailFallback(mailOptions) {
  */
 async function sendEmail(mailOptions) {
   // 1. Try sending via Resend API first
-  if (process.env.RESEND_API_KEY && resend) {
+    if (process.env.RESEND_API_KEY && resend && process.env.RESEND_FROM) {
     try {
-      const fromAddress = 'EventNet <onboarding@resend.dev>';
+      const fromAddress = process.env.RESEND_FROM;
       const { data, error } = await resend.emails.send({
         from: fromAddress,
         to: mailOptions.to,

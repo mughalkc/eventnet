@@ -144,7 +144,7 @@ cron.schedule('*/15 * * * *', async () => {
               `;
 
               if (emailService.sendEmail) {
-                await emailService.sendEmail(ticket.user.email, emailSubject, emailHtml);
+                 await emailService.sendEmail({ to: ticket.user.email, subject: emailSubject, html: emailHtml });
               }
               console.log(`Absent email sent to ${ticket.user.email} for event ${event.name}`);
             }

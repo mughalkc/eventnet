@@ -12,9 +12,11 @@ const multer = require('multer')
 const router = express.Router()
 
 // Register
-router.post('/register', async (req, res) => {
+const registerUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
+
+router.post('/register', registerUpload.single('photo'), async (req, res) => {
   try {
-    const { name, email, password, role } = req.body
+    const { name, email, password, role, phone } = req.body
 
     // Check if user already exists
     let user = await User.findOne({ email })
@@ -38,10 +40,18 @@ router.post('/register', async (req, res) => {
     }
 
     // Create new user
+       let photo
+    if (req.file) {
+      const { uploadBufferToCloudinary } = require('../utils/cloudinary')
+      photo = await uploadBufferToCloudinary(req.file.buffer, 'eventnet/profiles')
+    }
+
     user = new User({
       name,
       email,
       password,
+      phone,
+      photo,
       role,
       status
     })
@@ -58,8 +68,9 @@ user.isVerified = false
 await user.save()
 
 // Send OTP email
+let emailResult
 try {
-  await emailService.sendEmail({
+  emailResult = await emailService.sendEmail({
     to: email,
     subject: 'EventNet - Verify Your Email',
     html: `
@@ -74,6 +85,11 @@ try {
   })
 } catch (emailError) {
   console.error('OTP email error:', emailError)
+}
+
+if (!emailResult || !emailResult.success) {
+  await User.findByIdAndDelete(user._id)
+  return res.status(500).json({ message: 'Verification email could not be sent. Please try again.' })
 }
 
 return res.status(201).json({
@@ -196,16 +212,15 @@ router.post('/login', async (req, res) => {
     try {
       // Get basic login info from request
       const loginInfo = {
-        ip: req.ip || req.connection.remoteAddress,
+        ip: (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || req.connection.remoteAddress,
         browser: req.headers['user-agent'],
         device: req.headers['user-agent'] ? 
           req.headers['user-agent'].includes('Mobile') ? 'Mobile' : 'Desktop' : 'Unknown'
       };
       
       // Send notification email asynchronously (don't await)
-      emailService.sendLoginNotificationEmail(user.email, user.name, user.role, loginInfo)
-        .then(() => console.log(`Login notification email sent to ${user.email}`))
-        .catch(err => console.error('Error sending login notification:', err));
+            const loginMail = await emailService.sendLoginNotificationEmail(user.email, user.name, user.role, loginInfo)
+      if (!loginMail.success) console.error(`Login notification failed for ${user.email}`)
     } catch (error) {
       // Just log the error, don't fail the login if email sending fails
       console.error('Error preparing login notification email:', error);
