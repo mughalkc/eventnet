@@ -9,6 +9,7 @@ import {
   ShieldCheckIcon,
   UserCircleIcon,
   ClipboardDocumentCheckIcon,
+  EnvelopeIcon,
 } from '@heroicons/react/24/outline'
 
 const navigation = [
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Vendor Approvals', href: '/admin/vendor-approvals', icon: ShieldCheckIcon },
   { name: 'User Management', href: '/admin/user-management', icon: UserCircleIcon },
   { name: 'Tickets', href: '/admin/tickets', icon: TicketIcon },
+  { name: 'Messages', href: '/admin/messages', icon: EnvelopeIcon },
   // { name: 'Reports', href: '/admin/reports', icon: ClipboardDocumentCheckIcon },
   // { name: 'Settings', href: '/admin/settings', icon: CogIcon },
 ]

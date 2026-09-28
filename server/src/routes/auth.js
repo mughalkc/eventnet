@@ -25,7 +25,7 @@ router.post('/register', registerUpload.single('photo'), async (req, res) => {
     }
 
     // Validate role
-    const validRoles = ['user', 'vendor', 'admin']
+    const validRoles = ['user', 'vendor']
     if (!validRoles.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' })
     }
@@ -219,7 +219,7 @@ router.post('/login', async (req, res) => {
       };
       
       // Send notification email asynchronously (don't await)
-            const loginMail = await emailService.sendLoginNotificationEmail(user.email, user.name, user.role, loginInfo)
+         const loginMail = await emailService.sendLoginNotificationEmail(user.email, user.name, user.role, loginInfo)
       if (!loginMail.success) console.error(`Login notification failed for ${user.email}`)
     } catch (error) {
       // Just log the error, don't fail the login if email sending fails

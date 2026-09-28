@@ -96,6 +96,10 @@ const Dashboard = () => {
       const eventsResponse = await axios.get('https://eventnet-6c6d.vercel.app/api/admin/events')
       const events = eventsResponse.data || []
 
+      // ticket fetch
+      const ticketsResponse = await axios.get('https://eventnet-6c6d.vercel.app/api/admin/tickets')
+      const tickets = (ticketsResponse.data || []).filter(t => t.status === 'completed')
+
       // Calculate active events dynamically
       const now = new Date();
       const activeEventsCount = events.filter(event => {
@@ -123,32 +127,26 @@ const Dashboard = () => {
       const monthlyRevenueData = []
       
       // Create last 6 months of revenue data
-      for (let i = 5; i >= 0; i--) {
-        const month = new Date(currentDate)
-        month.setMonth(currentDate.getMonth() - i)
-        const monthName = monthNames[month.getMonth()]
-        
-        // Filter events by month and sum revenue
-        const monthEvents = events.filter(event => {
-          const eventDate = new Date(event.startDate || event.date)
-          return eventDate.getMonth() === month.getMonth() && eventDate.getFullYear() === month.getFullYear()
-        })
-        
-        const monthRevenue = monthEvents.reduce((sum, event) => {
-          return sum + ((event.registrations?.length || 0) * (event.price || 0))
-        }, 0)
-        
+         for (let i = 5; i >= 0; i--) {
+       const month = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+       const monthName = monthNames[month.getMonth()]
+
+       const monthRevenue = tickets
+        .filter(t => {
+        const d = new Date(t.createdAt)
+        return d.getMonth() === month.getMonth() && d.getFullYear() === month.getFullYear()
+          })
+          .reduce((sum, t) => sum + (t.price || 0), 0)
+
         monthlyRevenueData.push({ month: monthName, revenue: monthRevenue })
       }
       
       // Process event distribution data
       const eventTypes = {}
       events.forEach(event => {
-        const category = event.category || 'Other'
-        if (!eventTypes[category]) {
-          eventTypes[category] = 0
-        }
-        eventTypes[category]++
+        const status = event.liveStatus || 'upcoming'
+        const label = status.charAt(0).toUpperCase() + status.slice(1)
+        eventTypes[label] = (eventTypes[label] || 0) + 1
       })
       
       const eventDistributionData = Object.keys(eventTypes).map(key => ({
@@ -176,11 +174,11 @@ const Dashboard = () => {
       }
       
       // Calculate summary statistics
-      const summaryStats = {
+        const summaryStats = {
         totalRevenue: statsResponse.data.totalRevenue || 0,
         totalEvents: events.length,
-        activeUsers: users.filter(user => user.status === 'active').length,
-        ticketSales: events.reduce((sum, event) => sum + (event.attendees?.length || 0), 0)
+        activeUsers: users.filter(user => user.status === 'active' || user.status === 'approved').length,
+        ticketSales: tickets.reduce((sum, t) => sum + (t.quantity || 1), 0)
       }
       
       // Update chart data state

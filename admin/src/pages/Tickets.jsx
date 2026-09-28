@@ -6,6 +6,7 @@ XMarkIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
 
 const Tickets = () => {
   const [searchText, setSearchText] = useState('');
@@ -18,13 +19,22 @@ const Tickets = () => {
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
 
-  const [newTicket, setNewTicket] = useState({
-  event: '',
-  user: '',
-  ticketType: 'General',
-  quantity: 1,
-  totalAmount: ''
-});
+   const [newTicket, setNewTicket] = useState({
+    event: '',
+    user: '',
+    ticketId: '',
+    quantity: 1,
+    complimentary: false
+  });
+
+  const selectedEvent = events.find((ev) => ev._id === newTicket.event);
+  const eventTickets = selectedEvent?.tickets || [];
+  const selectedTicket = eventTickets.find((t) => t._id === newTicket.ticketId);
+  const unitPrice = selectedTicket?.type === 'paid' ? (selectedTicket.price || 0) : 0;
+  const computedTotal = newTicket.complimentary
+    ? 0
+    : unitPrice * (Number(newTicket.quantity) || 0);
+
   useEffect(() => {
     fetchTickets();
   }, []);
@@ -60,8 +70,8 @@ const Tickets = () => {
 const handleCreateTicket = async (e) => {
   e.preventDefault();
 
-  if (!newTicket.event || !newTicket.user) {
-    toast.error('Please select an event and user');
+    if (!newTicket.event || !newTicket.user || !newTicket.ticketId) {
+    toast.error('Please select an event, user and ticket type');
     return;
   }
 
@@ -70,23 +80,23 @@ const handleCreateTicket = async (e) => {
 
     await axios.post(
       'https://eventnet-6c6d.vercel.app/api/admin/tickets',
-      {
+          {
         event: newTicket.event,
         user: newTicket.user,
-        ticketType: newTicket.ticketType,
+        ticketId: newTicket.ticketId,
         quantity: Number(newTicket.quantity),
-        totalAmount: Number(newTicket.totalAmount)
+        complimentary: newTicket.complimentary
       }
     );
 
     toast.success('Ticket created successfully');
 
-    setNewTicket({
+     setNewTicket({
       event: '',
       user: '',
-      ticketType: 'General',
+      ticketId: '',
       quantity: 1,
-      totalAmount: ''
+      complimentary: false
     });
 
     setShowCreateModal(false);
@@ -125,32 +135,32 @@ const handleCreateTicket = async (e) => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDownload = async (ticketId) => {
+  const handleDownload = (ticket) => {
     try {
       setGenerating(true);
-      const response = await axios.get(`https://eventnet-6c6d.vercel.app/api/admin/tickets/${ticketId}/download`, {
-        responseType: 'blob'
-      });
-      
-      // Create a blob URL for the PDF
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      
-      // Create a temporary link and trigger download
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Ticket-${ticketId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the blob URL
-      window.URL.revokeObjectURL(url);
-      setGenerating(false);
+      const loc = ticket.event?.location;
+      const address = typeof loc === 'object' ? (loc?.address || 'N/A') : (loc || 'N/A');
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text('EventNet Ticket', 20, 25);
+      doc.setFontSize(12);
+      const lines = [
+        `Ticket ID: ${ticket.ticketId}`,
+        `Event: ${ticket.event?.name || 'N/A'}`,
+        `Location: ${address}`,
+        `Attendee: ${ticket.user?.name || 'N/A'} (${ticket.user?.email || 'N/A'})`,
+        `Quantity: ${ticket.quantity}`,
+        `Amount: $${ticket.price ?? 0}`,
+        `Status: ${ticket.status}`,
+        `Date: ${ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'N/A'}`
+      ];
+      lines.forEach((line, i) => doc.text(line, 20, 45 + i * 10));
+      doc.save(`Ticket-${ticket.ticketId}.pdf`);
       toast.success('Ticket downloaded successfully');
     } catch (error) {
       console.error('Error downloading ticket:', error);
       toast.error('Failed to download ticket');
+    } finally {
       setGenerating(false);
     }
   };
@@ -281,7 +291,7 @@ const handleCreateTicket = async (e) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button 
-                        onClick={() => handleDownload(ticket.ticketId)}
+                       onClick={() => handleDownload(ticket)}
                         disabled={generating}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -332,7 +342,8 @@ const handleCreateTicket = async (e) => {
                   onChange={(e) =>
                     setNewTicket({
                       ...newTicket,
-                      event: e.target.value
+                      event: e.target.value,
+                      ticketId: ''
                     })
                   }
                   required
@@ -381,24 +392,30 @@ const handleCreateTicket = async (e) => {
                 </select>
               </div>
 
-              {/* Ticket Type */}
+                    {/* Ticket Type (from the selected event) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Ticket Type
                 </label>
 
-                <input
-                  type="text"
-                  value={newTicket.ticketType}
+                <select
+                  value={newTicket.ticketId}
                   onChange={(e) =>
-                    setNewTicket({
-                      ...newTicket,
-                      ticketType: e.target.value
-                    })
+                    setNewTicket({ ...newTicket, ticketId: e.target.value })
                   }
+                  required
+                  disabled={!newTicket.event}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. General, VIP"
-                />
+                >
+                  <option value="">
+                    {newTicket.event ? 'Select ticket type' : 'Select an event first'}
+                  </option>
+                  {eventTickets.map((t) => (
+                    <option key={t._id} value={t._id}>
+                      {t.name} — {t.type === 'free' ? 'Free' : t.price}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Quantity */}
@@ -422,27 +439,29 @@ const handleCreateTicket = async (e) => {
                 />
               </div>
 
-              {/* Total Amount */}
+                    {/* Complimentary (free) */}
+              <div className="flex items-center gap-2">
+                <input
+                  id="complimentary"
+                  type="checkbox"
+                  checked={newTicket.complimentary}
+                  onChange={(e) =>
+                    setNewTicket({ ...newTicket, complimentary: e.target.checked })
+                  }
+                />
+                <label htmlFor="complimentary" className="text-sm font-medium text-gray-700">
+                  Complimentary (free pass, no payment)
+                </label>
+              </div>
+
+              {/* Total (read-only, calculated from the ticket type) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Total Amount
                 </label>
-
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={newTicket.totalAmount}
-                  onChange={(e) =>
-                    setNewTicket({
-                      ...newTicket,
-                      totalAmount: e.target.value
-                    })
-                  }
-                  required
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter amount"
-                />
+                <div className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900">
+                  {computedTotal === 0 ? 'Free' : computedTotal}
+                </div>
               </div>
 
               {/* Buttons */}

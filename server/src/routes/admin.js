@@ -65,16 +65,16 @@ router.get('/dashboard-stats', verifyToken, verifyAdmin, async (req, res) => {
       return now >= start && now <= end;
     }).length;
 
-    const Revenue = require('../models/Revenue');
-    let totalRevenue = 0;
-    const revenueAgg = await Revenue.aggregate([
-      { $match: { status: { $ne: 'refunded' } } },
-      { $group: { _id: null, total: { $sum: '$netAmount' } } }
-    ]);
-    
-    if (revenueAgg.length > 0 && revenueAgg[0].total) {
-      totalRevenue = revenueAgg[0].total;
-    }
+        // Total revenue = all completed tickets (same source as Analytics)
+        let totalRevenue = 0;
+        const revenueAgg = await Ticket.aggregate([
+          { $match: { paymentStatus: 'completed' } },
+          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        ]);
+        
+        if (revenueAgg.length > 0 && revenueAgg[0].total) {
+          totalRevenue = revenueAgg[0].total;
+        }
     
     res.json({
       totalUsers,
@@ -121,7 +121,9 @@ router.post('/users', verifyToken, verifyAdmin, async (req, res) => {
       email,
       password,
       role: role || 'user',
-      status: 'active'
+      status: role === 'vendor' ? 'approved' : 'active',
+      isVerified: true
+
     });
 
     await user.save();
@@ -469,35 +471,34 @@ router.post('/vendors/event-counts', verifyToken, verifyAdmin, async (req, res) 
 // Create ticket manually from admin panel
 router.post('/tickets', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const {
-      event,
-      user,
-      ticketType,
-      quantity,
-      totalAmount
-    } = req.body;
+    const { event, user, ticketId, quantity, complimentary } = req.body;
+    const qty = Number(quantity);
 
-    if (!event || !user || !quantity || totalAmount === undefined) {
+    if (!event || !user || !ticketId || !qty || qty < 1) {
       return res.status(400).json({
-        message: 'Event, user, quantity and total amount are required'
+        message: 'Event, user, ticket type and quantity are required'
       });
     }
 
-    const eventExists = await Event.findById(event);
-
-    if (!eventExists) {
-      return res.status(404).json({
-        message: 'Event not found'
-      });
+    const eventDoc = await Event.findById(event);
+    if (!eventDoc) {
+      return res.status(404).json({ message: 'Event not found' });
     }
 
     const userExists = await User.findById(user);
-
     if (!userExists) {
-      return res.status(404).json({
-        message: 'User not found'
-      });
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    // Price always comes from the event's own ticket type (admin cannot type a custom price)
+    const ticketDef = eventDoc.tickets.id(ticketId);
+    if (!ticketDef) {
+      return res.status(404).json({ message: 'Ticket type not found for this event' });
+    }
+
+    const unitPrice = ticketDef.type === 'paid' ? (ticketDef.price || 0) : 0;
+    const amount = complimentary ? 0 : parseFloat((unitPrice * qty).toFixed(2));
+    const isFree = amount === 0;
 
     const ticketCode =
       'TKT-' +
@@ -507,15 +508,35 @@ router.post('/tickets', verifyToken, verifyAdmin, async (req, res) => {
     const newTicket = new Ticket({
       event,
       user,
-      ticketType: ticketType || 'General',
-      quantity: Number(quantity),
-      totalAmount: Number(totalAmount),
+      ticketType: String(ticketId),
+      quantity: qty,
+      totalAmount: amount,
       ticketCode,
       paymentStatus: 'completed',
-      paymentMethod: 'admin'
+      paymentMethod: isFree ? 'free' : 'other'
     });
 
     await newTicket.save();
+
+    // Paid ticket: revenue goes to the vendor who owns the event (10% platform fee, same as Stripe flow)
+    if (!isFree) {
+      const Revenue = require('../models/Revenue');
+      const platformFee = parseFloat((amount * 0.10).toFixed(2));
+      await new Revenue({
+        vendor: eventDoc.createdBy,
+        event: eventDoc._id,
+        ticket: newTicket._id,
+        amount,
+        fee: platformFee,
+        netAmount: parseFloat((amount - platformFee).toFixed(2)),
+        status: 'paid',
+        paymentMethod: 'admin',
+        paidDate: new Date()
+      }).save();
+    }
+
+    // Add user to the event attendees (no duplicates)
+    await Event.updateOne({ _id: event }, { $addToSet: { attendees: user } });
 
     const createdTicket = await Ticket.findById(newTicket._id)
       .populate('event', 'name startDate endDate location')
@@ -535,6 +556,8 @@ router.post('/tickets', verifyToken, verifyAdmin, async (req, res) => {
     });
   }
 });
+
+
 
 // Ticket management routes
 router.get('/tickets', verifyToken, verifyAdmin, async (req, res) => {
