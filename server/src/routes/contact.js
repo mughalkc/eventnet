@@ -210,7 +210,6 @@ router.delete(
     }
   }
 );
-);
 
 // Admin + Vendor can reply to ONE specific Contact Us message.
 // Email goes ONLY to the email saved in that message (taken from DB,
