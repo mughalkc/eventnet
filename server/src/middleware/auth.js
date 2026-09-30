@@ -14,17 +14,31 @@ const verifyToken = async (req, res, next) => {
     console.log('Decoded token:', decoded);
     
     // Handle both user and vendor tokens
-    if (decoded.role === 'vendor') {
-      const vendor = await Vendor.findById(decoded.vendorId || decoded.userId || decoded.id)
-      if (!vendor) {
-        return res.status(401).json({ message: 'Vendor not found' })
-      }
-      req.user = {
-        _id: vendor._id, // Use _id to match the expected format in routes
-        id: vendor._id,
-        role: 'vendor',
-        email: vendor.contactEmail,
-        name: vendor.businessName
+      if (decoded.role === 'vendor') {
+      const vendorId = decoded.vendorId || decoded.userId || decoded.id
+      const vendor = await Vendor.findById(vendorId)
+
+      if (vendor) {
+        req.user = {
+          _id: vendor._id, // Use _id to match the expected format in routes
+          id: vendor._id,
+          role: 'vendor',
+          email: vendor.contactEmail,
+          name: vendor.businessName
+        }
+      } else {
+        // Vendor created by admin exists only in the User collection
+        const vendorUser = await User.findOne({ _id: vendorId, role: 'vendor' })
+        if (!vendorUser) {
+          return res.status(401).json({ message: 'Vendor not found' })
+        }
+        req.user = {
+          _id: vendorUser._id,
+          id: vendorUser._id,
+          role: 'vendor',
+          email: vendorUser.email,
+          name: vendorUser.businessName || vendorUser.name
+        }
       }
     } else {
       const user = await User.findById(decoded.userId || decoded.id)

@@ -49,10 +49,11 @@ const checkAuthStatus = async () => {
           }
         });
         
-        setUser({
+           setUser({
           id: response.data.id || response.data._id || payload.vendorId || payload.id,
           name: response.data.businessName || response.data.name || 'Vendor',
           email: response.data.email || response.data.contactEmail,
+          photo: response.data.photo,
           role: 'vendor',
           status: response.data.status
         });
@@ -134,10 +135,11 @@ const checkAuthStatus = async () => {
         });
         
         const { token, vendor } = response.data;
-        const normalizedUser = {
+          const normalizedUser = {
           id: vendor.id,
           name: vendor.businessName,
-          email: vendor.contactEmail,
+          email: vendor.email || vendor.contactEmail,
+          photo: vendor.photo,
           role: 'vendor',
           status: vendor.status
         };

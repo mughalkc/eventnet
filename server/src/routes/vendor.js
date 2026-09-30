@@ -544,7 +544,9 @@ router.get('/profile', verifyToken, verifyVendor, async (req, res) => {
     const profile = {
       id: vendorId,
       businessName: (user?.businessName || vendor?.businessName),
+      name: (user?.name || vendor?.businessName),
       email: (user?.email || vendor?.contactEmail),
+      photo: user?.photo,
       phone: (user?.phoneNumber || vendor?.contactPhone),
       services: vendor?.services || [],
       description: vendor?.description,
@@ -647,7 +649,8 @@ router.put('/profile', verifyToken, profileUpload.single('photo'), async (req, r
       console.error('Error updating user/vendor:', error);
     }
 
-    if (!updatedVendor) {
+        // Vendor created by admin exists only as a User (no Vendor document) - that is fine
+      if (!updatedUser && !updatedVendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }
 
@@ -658,7 +661,7 @@ router.put('/profile', verifyToken, profileUpload.single('photo'), async (req, r
       phone: updatedUser.phoneNumber,
       photo: updatedUser.photo,
       role: 'vendor',
-      status: updatedUser.status || updatedVendor.status
+      status: updatedUser.status || updatedVendor?.status
     } : {
       id: vendorId,
       name: name || updatedVendor.businessName,
