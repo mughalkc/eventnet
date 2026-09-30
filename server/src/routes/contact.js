@@ -5,11 +5,11 @@ const router = express.Router();
 const ContactMessage = require('../models/ContactMessage');
 const { verifyToken, verifyAdmin, verifyVendor } = require('../middleware/auth');
 const emailService = require('../utils/emailService');
-
+const User = require('../models/User');
 
 router.post('/', async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+       const { name, email, message, targetAdminId } = req.body;
 
     // Validate required fields
     if (!name || !email || !message) {
@@ -18,12 +18,28 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Save message permanently in MongoDB
+   
 
+   // Optional: vendor chose one specific admin
+    let targetAdmin = null;
+    let notifyEmail = process.env.EMAIL_USER;
+
+    if (targetAdminId) {
+      const admin = await User.findOne({ _id: targetAdminId, role: 'admin' });
+
+      if (!admin) {
+        return res.status(400).json({ message: 'Selected admin not found' });
+      }
+
+      targetAdmin = admin._id;
+      notifyEmail = admin.email;
+    }
+ // Save message permanently in MongoDB
     const contactMessage = await ContactMessage.create({
       name,
       email,
-      message
+      message,
+      targetAdmin
     });
 
     // Send email notification
@@ -33,7 +49,7 @@ router.post('/', async (req, res) => {
 
     try {
       await emailService.sendEmail({
-        to: process.env.EMAIL_USER,
+        to: notifyEmail,
         subject: `Contact Form: ${name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
@@ -79,6 +95,24 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Admin list for the vendor's "Send To" dropdown
+router.get('/admins', verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'vendor') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const admins = await User.find({ role: 'admin' })
+      .select('name email')
+      .sort({ name: 1 });
+
+    res.json(admins);
+  } catch (error) {
+    console.error('Fetch admins error:', error);
+    res.status(500).json({ message: 'Failed to fetch admins' });
+  }
+});
+
 // Admin + Vendor can view all Contact Us messages.
 
 router.get(
@@ -109,8 +143,14 @@ router.get(
   async (req, res) => {
 
     try {
+       // Admin sees: messages for everyone + messages sent only to him
+      // Vendor sees: only messages for everyone (not private vendor->admin ones)
+      const filter =
+        req.user.role === 'admin'
+          ? { $or: [{ targetAdmin: null }, { targetAdmin: req.user._id }] }
+          : { targetAdmin: null };
       // Get newest messages first
-      const messages = await ContactMessage.find()
+      const messages = await ContactMessage.find(filter)
         .sort({ createdAt: -1 });
 
       res.json(messages);
@@ -170,6 +210,62 @@ router.delete(
     }
   }
 );
+);
+
+// Admin + Vendor can reply to ONE specific Contact Us message.
+// Email goes ONLY to the email saved in that message (taken from DB,
+// not from the frontend), so it can never reach anyone else.
+router.post('/:id/reply', verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'vendor') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const { replyText } = req.body;
+
+    if (!replyText || !replyText.trim()) {
+      return res.status(400).json({ message: 'Reply message is required' });
+    }
+
+    const contactMessage = await ContactMessage.findById(req.params.id);
+
+    if (!contactMessage) {
+      return res.status(404).json({ message: 'Contact message not found' });
+    }
+
+    const escapeHtml = (text) =>
+      String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const result = await emailService.sendEmail({
+      to: contactMessage.email,
+      subject: 'Reply to your message - EventNet',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <h2>Hello ${escapeHtml(contactMessage.name)},</h2>
+          <p style="white-space: pre-wrap;">${escapeHtml(replyText.trim())}</p>
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;" />
+          <p style="color: #6b7280; font-size: 13px;"><strong>Your message:</strong></p>
+          <p style="color: #6b7280; font-size: 13px; white-space: pre-wrap;">${escapeHtml(contactMessage.message)}</p>
+        </div>
+      `
+    });
+
+    // sendEmail returns success:false when both Resend and Gmail fail
+    if (!result || result.success !== true) {
+      return res.status(500).json({ message: 'Email could not be sent' });
+    }
+
+    res.json({ message: 'Reply sent successfully' });
+  } catch (error) {
+    console.error('Reply contact message error:', error);
+    res.status(500).json({ message: 'Failed to send reply' });
+  }
+});
+
+
 
 
 module.exports = router;

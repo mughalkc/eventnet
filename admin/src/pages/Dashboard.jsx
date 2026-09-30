@@ -359,7 +359,7 @@ const Dashboard = () => {
                           dataKey="value"
                         >
                           {chartData.eventDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index % 4]} />
+                            <Cell key={`cell-${index}`} fill={{ Upcoming: '#0088FE', Ongoing: '#00C49F', Expired: '#FF8042' }[entry.name] || '#8884d8'} />
                           ))}
                         </Pie>
                         <Tooltip />

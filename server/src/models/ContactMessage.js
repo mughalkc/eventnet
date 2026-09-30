@@ -25,6 +25,14 @@ const contactMessageSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true
+    
+  },
+     // If a vendor chose one admin, this holds that admin's id.
+    // null = message is for everyone (all admins and vendors can see it)
+    targetAdmin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
     }
   },
   {

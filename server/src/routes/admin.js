@@ -194,21 +194,27 @@ router.get('/events', verifyToken, verifyAdmin, async (req, res) => {
       if (stat._id) statsMap[stat._id.toString()] = stat;
     });
 
+    
     const now = new Date();
+
+    // Pakistan Standard Time (UTC+5) helper - server UTC pe chalta hai
+    const makePKT = (dateValue, timeStr, defH, defM, sec = 0, ms = 0) => {
+      const d = new Date(dateValue);
+      const [h, m] = parseTime(timeStr, defH, defM);
+      return new Date(
+        Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m, sec, ms) - (5 * 60 * 60 * 1000)
+      );
+    };
 
     const eventsWithLiveStatus = events.map(event => {
       let liveStatus = 'upcoming';
 
       if (event.startDate) {
-        const start = new Date(event.startDate);
-        const [startH, startM] = parseTime(event.startTime, 0, 0);
-        start.setHours(startH, startM, 0, 0);
-
-        const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
-        let [endH, endM] = parseTime(event.endTime, startH + 2, startM);
-        end.setHours(endH, endM, 59, 999);
+        const start = makePKT(event.startDate, event.startTime, 0, 0);
+        const end = makePKT(event.endDate || event.startDate, event.endTime, 23, 59, 59, 999);
 
         if (now > end) {
+    
           liveStatus = 'expired';
         } else if (now >= start && now <= end) {
           liveStatus = 'ongoing';

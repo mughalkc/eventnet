@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -20,6 +20,41 @@ export default function ContactUs() {
   })
 
   const [isLoading, setIsLoading] = useState(false)
+   // Only vendors see the "Send To" admin select
+  const isVendor = user?.role === 'vendor'
+  const [admins, setAdmins] = useState([])
+  const [targetAdminId, setTargetAdminId] = useState('')
+
+  // Load admin list for vendors
+  useEffect(() => {
+    if (!isVendor) return
+
+    const fetchAdmins = async () => {
+      try {
+        const token = localStorage.getItem('token')
+
+        const response = await fetch(`${config.apiUrl}/contact/admins`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        if (!response.ok) return
+
+        const data = await response.json()
+        const list = Array.isArray(data) ? data : []
+
+        setAdmins(list)
+
+        // Only one admin? select him automatically
+        if (list.length === 1) {
+          setTargetAdminId(list[0]._id)
+        }
+      } catch (error) {
+        console.error('Fetch admins error:', error)
+      }
+    }
+
+    fetchAdmins()
+  }, [isVendor])
 
   const handleChange = (e) => {
     setFormData({
@@ -59,7 +94,8 @@ export default function ContactUs() {
           message: formData.message,
           userId: user.id || user._id,
           vendorId: vendorId || null,
-          eventId: eventId || null
+          eventId: eventId || null,
+          targetAdminId: isVendor && targetAdminId ? targetAdminId : null
         })
       })
 
@@ -132,6 +168,29 @@ export default function ContactUs() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+              {/* Send To (vendors only) */}
+          {isVendor && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Send To
+              </label>
+
+              <select
+                value={targetAdminId}
+                onChange={(e) => setTargetAdminId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All (visible to everyone)</option>
+
+                {admins.map((admin) => (
+                  <option key={admin._id} value={admin._id}>
+                    {admin.name} ({admin.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Message */}
           <div>

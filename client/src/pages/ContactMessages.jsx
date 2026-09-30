@@ -24,6 +24,11 @@ export default function ContactMessages() {
 
   // Loading state
   const [loading, setLoading] = useState(true);
+  // Reply text for each message (keyed by message id)
+  const [replyTexts, setReplyTexts] = useState({});
+
+  // Which message's reply is currently being sent
+  const [sendingId, setSendingId] = useState(null);
 
   // ----------------------------------------------------------
   // Fetch messages
@@ -136,6 +141,60 @@ export default function ContactMessages() {
     }
   };
 
+   // Send reply to the user who sent this message
+ 
+
+  const handleReply = async (id) => {
+
+    const replyText = (replyTexts[id] || '').trim();
+
+    if (!replyText) {
+      toast.error('Please write a reply first');
+      return;
+    }
+
+    try {
+
+      setSendingId(id);
+
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(
+        `${config.apiUrl}/contact/${id}/reply`,
+        {
+          method: 'POST',
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify({ replyText })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to send reply');
+      }
+
+      // Clear the box only for this message
+      setReplyTexts((current) => ({ ...current, [id]: '' }));
+
+      toast.success('Reply sent successfully');
+
+    } catch (error) {
+
+      console.error('Reply error:', error);
+
+      toast.error(error.message || 'Failed to send reply');
+
+    } finally {
+
+      setSendingId(null);
+
+    }
+  };
 
   // ==========================================================
   // LOADING STATE
@@ -252,6 +311,33 @@ export default function ContactMessages() {
 
                     </div>
 
+                      {/* Reply box */}
+                      
+                     <div className="mt-4">
+
+                      <textarea
+                        rows={3}
+                        value={replyTexts[message._id] || ''}
+                        onChange={(e) =>
+                          setReplyTexts((current) => ({
+                            ...current,
+                            [message._id]: e.target.value
+                          }))
+                        }
+                        placeholder={`Reply to ${message.name}...`}
+                        className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => handleReply(message._id)}
+                        disabled={sendingId === message._id}
+                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        {sendingId === message._id ? 'Sending...' : 'Send Reply'}
+                      </button>
+
+                    </div>
                   </div>
 
 
