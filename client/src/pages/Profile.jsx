@@ -169,8 +169,12 @@ const Profile = () => {
         console.log('Processed user data for state update:', updatedUserData);
         
         // Update the preview URL with the new photo path from the server
-        if (updatedUserData.photo && updatedUserData.photo.startsWith('/uploads')) {
-          setPreviewUrl(`https://eventnet-6c6d.vercel.app${updatedUserData.photo}`);
+           if (updatedUserData.photo) {
+          setPreviewUrl(
+            updatedUserData.photo.startsWith('/uploads')
+              ? `https://eventnet-6c6d.vercel.app${updatedUserData.photo}`
+              : updatedUserData.photo
+          );
         }
         
         // Update the global user state

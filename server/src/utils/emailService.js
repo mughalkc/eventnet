@@ -132,7 +132,9 @@ async function sendEmail(mailOptions) {
         from: fromAddress,
         to: mailOptions.to,
         subject: mailOptions.subject,
-        html: mailOptions.html
+        html: mailOptions.html,
+        ...(mailOptions.text && { text: mailOptions.text }),
+        ...(mailOptions.replyTo && { replyTo: mailOptions.replyTo })
       });
 
       if (error) {
@@ -157,7 +159,9 @@ async function sendEmail(mailOptions) {
         from: mailOptions.from || `"EventNet" <${process.env.EMAIL_USER}>`,
         to: mailOptions.to,
         subject: mailOptions.subject,
-        html: mailOptions.html
+        html: mailOptions.html,
+        ...(mailOptions.text && { text: mailOptions.text }),
+        ...(mailOptions.replyTo && { replyTo: mailOptions.replyTo })
       };
 
       const info = await transporter.sendMail(nodemailerOptions);

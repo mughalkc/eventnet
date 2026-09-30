@@ -238,8 +238,13 @@ router.post('/:id/reply', verifyToken, async (req, res) => {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
+        // Unique subject for every reply (looks like a real reply, not bulk mail)
+    const shortSubject = contactMessage.message.replace(/\s+/g, ' ').trim().slice(0, 50);
+    
     const result = await emailService.sendEmail({
-      to: contactMessage.email,
+    to: contactMessage.email,
+    replyTo: req.user.email,
+      text: `Hello ${contactMessage.name},\n\n${replyText.trim()}\n\n---\nYour message:\n${contactMessage.message}`,
       subject: 'Reply to your message - EventNet',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
